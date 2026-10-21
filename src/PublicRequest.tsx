@@ -1,3 +1,6 @@
+import Required from "./Required";
+import departments from "./data/departments.json";
+import { today, dateLabel } from "./lib/dates";
 import Loading from "./Loading";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -18,6 +21,7 @@ const blankStop = (): PublicStop => ({
   phone: "",
 });
 const blank = (): PublicPayload => ({
+  jobDate: today(),
   title: "",
   requester: "",
   requesterPhone: "",
@@ -43,7 +47,9 @@ export default function PublicRequest() {
     setError("");
     void loadPublicMessengers()
       .then(setOptions)
-      .catch(() => setError("โหลดรายชื่อ Messenger ไม่สำเร็จ กรุณาลองใหม่"))
+      .catch(() =>
+        setError("โหลดรายชื่อผู้รับส่งเอกสาร ไม่สำเร็จ กรุณาลองใหม่"),
+      )
       .finally(() => setLoading(false));
   };
   useEffect(() => {
@@ -53,7 +59,8 @@ export default function PublicRequest() {
         if (alive) setOptions(data);
       })
       .catch(() => {
-        if (alive) setError("โหลดรายชื่อ Messenger ไม่สำเร็จ กรุณาลองใหม่");
+        if (alive)
+          setError("โหลดรายชื่อผู้รับส่งเอกสาร ไม่สำเร็จ กรุณาลองใหม่");
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -112,7 +119,7 @@ export default function PublicRequest() {
       <header className="public-header">
         <span className="brandmark">m↗</span>
         <div>
-          <b>Messenger</b>
+          <b>รับ–ส่งเอกสาร</b>
           <small>ส่งงานรับ–ส่งเอกสาร</small>
         </div>
         <a href="#/">เข้าสู่ระบบ</a>
@@ -125,7 +132,7 @@ export default function PublicRequest() {
             <p>เลขงานของคุณ</p>
             <strong>{receipt}</strong>
             <p>
-              งานเข้ากองงานของ Messenger ที่เลือกแล้ว
+              งานเข้ากองงานของ ผู้รับส่งเอกสารที่เลือกแล้ว
               กรุณาเก็บเลขงานนี้ไว้สำหรับติดต่อผู้รับผิดชอบ
             </p>
             <button className="primary" onClick={reset}>
@@ -146,17 +153,16 @@ export default function PublicRequest() {
                 <section className="panel">
                   <h2>{form.title}</h2>
                   <dl className="review-data">
+                    <dt>วันที่</dt>
+                    <dd>{dateLabel(form.jobDate)}</dd>
+                    <dt>แผนก</dt>
+                    <dd>{form.department}</dd>
                     <dt>ผู้มอบหมาย</dt>
                     <dd>{form.requester}</dd>
                     <dt>เบอร์ติดต่อ</dt>
                     <dd>{form.requesterPhone}</dd>
-                    {form.department && (
-                      <>
-                        <dt>แผนก</dt>
-                        <dd>{form.department}</dd>
-                      </>
-                    )}
-                    <dt>Messenger</dt>
+
+                    <dt>ผู้รับส่งเอกสาร</dt>
                     <dd>
                       {options.find((o) => o.id === form.messengerId)?.name ||
                         "รายชื่อที่เลือก"}
@@ -213,7 +219,7 @@ export default function PublicRequest() {
                     !form.messengerId ||
                     !options.some((o) => o.id === form.messengerId)
                   ) {
-                    setError("กรุณาเลือก Messenger ที่พร้อมรับงาน");
+                    setError("กรุณาเลือกผู้รับส่งเอกสาร ที่พร้อมรับงาน");
                     return;
                   }
                   setReview(true);
@@ -224,7 +230,7 @@ export default function PublicRequest() {
                 <section className="panel">
                   <h2>รายละเอียดงาน</h2>
                   <label className="field">
-                    ชื่องาน *
+                    ชื่องาน <Required />
                     <input
                       required
                       maxLength={200}
@@ -237,7 +243,7 @@ export default function PublicRequest() {
                   </label>
                   <div className="public-fields">
                     <label className="field">
-                      ชื่อผู้มอบหมาย *
+                      ชื่อผู้มอบหมาย <Required />
                       <input
                         required
                         autoComplete="name"
@@ -249,12 +255,10 @@ export default function PublicRequest() {
                       />
                     </label>
                     <label className="field">
-                      เบอร์ติดต่อผู้มอบหมาย *
+                      เบอร์ติดต่อผู้มอบหมาย
                       <input
-                        required
                         type="tel"
                         autoComplete="tel"
-                        minLength={5}
                         maxLength={40}
                         value={form.requesterPhone}
                         onChange={(e) =>
@@ -264,17 +268,35 @@ export default function PublicRequest() {
                     </label>
                   </div>
                   <label className="field">
-                    แผนก (ถ้ามี)
-                    <input
-                      maxLength={120}
+                    แผนก <Required />
+                    <select
+                      required
                       value={form.department}
                       onChange={(e) =>
                         setForm({ ...form, department: e.target.value })
                       }
+                    >
+                      <option value="">เลือกแผนก</option>
+                      {departments.map((d) => (
+                        <option key={d}>{d}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="field">
+                    วันที่ <Required />
+                    <input
+                      type="date"
+                      min="0001-01-01"
+                      max="9999-12-31"
+                      required
+                      value={form.jobDate}
+                      onChange={(e) =>
+                        setForm({ ...form, jobDate: e.target.value })
+                      }
                     />
                   </label>
                   <label className="field">
-                    Messenger ผู้รับงาน *
+                    ผู้รับส่งเอกสาร <Required />
                     <select
                       required
                       disabled={loading || !options.length}
@@ -284,7 +306,7 @@ export default function PublicRequest() {
                       }
                     >
                       <option value="">
-                        {loading ? "กำลังโหลดรายชื่อ…" : "เลือก Messenger"}
+                        {loading ? "กำลังโหลดรายชื่อ…" : "เลือกผู้รับส่งเอกสาร"}
                       </option>
                       {options.map((o) => (
                         <option key={o.id} value={o.id}>
@@ -295,7 +317,7 @@ export default function PublicRequest() {
                   </label>
                   {!loading && !options.length && (
                     <p className="auth-message">
-                      ยังไม่มี Messenger พร้อมรับงาน
+                      ยังไม่มีผู้รับส่งเอกสาร พร้อมรับงาน
                       กรุณาติดต่อผู้ดูแลก่อนส่งงาน
                     </p>
                   )}
@@ -337,8 +359,9 @@ export default function PublicRequest() {
                       )}
                     </div>
                     <label className="field">
-                      ประเภทจุดที่ {i + 1} *
+                      ประเภทจุดที่ {i + 1} <Required />
                       <select
+                        required
                         value={s.kind}
                         onChange={(e) => patchStop(i, { kind: e.target.value })}
                       >
@@ -347,7 +370,7 @@ export default function PublicRequest() {
                       </select>
                     </label>
                     <label className="field">
-                      ชื่อสถานที่จุดที่ {i + 1} *
+                      ชื่อสถานที่จุดที่ {i + 1} <Required />
                       <input
                         required
                         maxLength={200}
@@ -356,9 +379,8 @@ export default function PublicRequest() {
                       />
                     </label>
                     <label className="field">
-                      ที่อยู่จุดที่ {i + 1} *
+                      ที่อยู่จุดที่ {i + 1}
                       <textarea
-                        required
                         maxLength={1000}
                         rows={3}
                         value={s.address}

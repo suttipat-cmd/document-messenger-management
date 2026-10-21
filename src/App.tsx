@@ -1,3 +1,4 @@
+import { dateLabel } from "./lib/dates";
 import { useState } from "react";
 import type { Action, Profile } from "./lib/workspace";
 import "./App.css";
@@ -21,6 +22,7 @@ export type Job = {
   title: string;
   person: string;
   requesterPhone?: string;
+  jobDate?: string;
   messengerName?: string;
   department: string;
   status: "new" | "active" | "returning" | "done";
@@ -206,7 +208,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
       setNotice("บันทึกข้อมูลแล้ว");
       window.scrollTo({ top: 0, behavior: "instant" });
     } catch {
-      setNotice("ยังยืนยันผลไม่ได้ กรุณาตรวจข้อความการเชื่อมต่อแล้วรีเฟรช");
+      setNotice("ยังยืนยันผลไม่ได้ กรุณาตรวจข้อความการเชื่อมต่อแล้วโหลดใหม่");
     }
   };
   const accept = (j: Job) => {
@@ -238,7 +240,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
       void remote
         .onReorder(ids)
         .catch(() =>
-          setNotice("บันทึกลำดับไม่สำเร็จ กรุณารีเฟรชแล้วลองอีกครั้ง"),
+          setNotice("บันทึกลำดับไม่สำเร็จ กรุณาโหลดใหม่แล้วลองอีกครั้ง"),
         );
     } else setRouteOrder(reorderRoute);
   };
@@ -466,6 +468,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         </span>
       </div>
       <h3>{j.title}</h3>
+      {j.jobDate && <small>{dateLabel(j.jobDate)}</small>}
       <p>
         {j.person} · {j.department}
       </p>
@@ -534,7 +537,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             m<span>↗</span>
           </span>
           <span>
-            messenger<small>DOCUMENT WORKSPACE</small>
+            รับ–ส่งเอกสาร<small>งานรับ–ส่งเอกสาร</small>
           </span>
         </a>
         <span className="avatar">น</span>
@@ -867,7 +870,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             </>
           ) : tab === "stops" ? (
             <>
-              <span className="eyebrow">YOUR ROUTE</span>
+              <span className="eyebrow">เส้นทางของฉัน</span>
               <h1>จุดรับ–ส่ง</h1>
               <p className="subtitle">เลือกจุดจากทุกงานที่รับแล้วได้อิสระ</p>
               {searchBox}
@@ -934,7 +937,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             </>
           ) : tab === "history" ? (
             <>
-              <span className="eyebrow">COMPLETED</span>
+              <span className="eyebrow">งานเสร็จสิ้น</span>
               <h1>ประวัติงาน</h1>
               <p className="subtitle">
                 ตรวจรายละเอียด รูปหลักฐาน และลำดับเหตุการณ์
@@ -978,14 +981,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             </>
           ) : (
             <>
-              <span className="eyebrow">YOUR WORKSPACE</span>
+              <span className="eyebrow">พื้นที่ทำงาน</span>
               <h1>บัญชีของฉัน</h1>
               <section className="panel">
                 <span className="avatar big">น</span>
                 <h2>
                   {remote
-                    ? `${remote.profile.display_name} · ${{ admin: "Admin", super_user: "Super User", messenger: "Messenger" }[remote.profile.role]}`
-                    : "คุณนัท · Messenger"}
+                    ? `${remote.profile.display_name} · ${{ admin: "ผู้ดูแลระบบ", super_user: "ผู้จัดการงาน", messenger: "ผู้รับส่งเอกสาร" }[remote.profile.role]}`
+                    : "คุณนัท · ผู้รับส่งเอกสาร"}
                 </h2>
               </section>
               {remote ? (

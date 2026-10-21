@@ -78,3 +78,43 @@ it("retains operational commands and hides account management for Super User", a
     "",
   );
 });
+it.each(["admin", "super_user"] as const)(
+  "makes accepted jobs read only for %s",
+  async (role) => {
+    const u = userEvent.setup();
+    const command = vi.fn();
+    render(
+      <Manager
+        snapshot={{
+          ...snapshot,
+          profile: { ...snapshot.profile!, role },
+          jobs: [{ ...snapshot.jobs[0], status: "active" }],
+        }}
+        users={null}
+        busy={false}
+        onCommand={command}
+        onCreate={vi.fn()}
+        onRefresh={vi.fn()}
+        onLogout={vi.fn()}
+      />,
+    );
+    await u.click(screen.getByRole("button", { name: /MSG-26100001/ }));
+    expect(screen.queryByRole("button", { name: "รับงาน" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "สำเร็จ" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /หมายเหตุ/ })).toBeNull();
+    expect(
+      screen.getAllByRole("columnheader").map((x) => x.textContent),
+    ).toEqual([
+      "ลำดับ",
+      "วันที่",
+      "เลขงาน",
+      "ชื่องาน",
+      "แผนก",
+      "ผู้มอบหมาย",
+      "ผู้รับส่งเอกสาร",
+      "สถานะ",
+      "ความคืบหน้า",
+    ]);
+    expect(command).not.toHaveBeenCalled();
+  },
+);

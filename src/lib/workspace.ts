@@ -26,6 +26,7 @@ type DbJob = {
   title: string;
   requester: string;
   requester_phone: string;
+  job_date: string;
   messenger_id: string;
   department: string;
   status: Job["status"];
@@ -98,6 +99,7 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         title: j.title,
         person: j.requester,
         requesterPhone: j.requester_phone,
+        jobDate: j.job_date,
         messengerName: profiles.find((p) => p.id === j.messenger_id)
           ?.display_name,
         department: j.department,
@@ -145,6 +147,8 @@ export async function reorder(ids: string[]) {
   if (r.error) throw r.error;
 }
 export type CreateJob = {
+  jobDate: string;
+  requesterPhone: string;
   title: string;
   requester: string;
   department: string;
@@ -161,6 +165,8 @@ export async function createJob(input: CreateJob) {
   if (!supabase) throw new Error("Supabase configuration missing");
   const r = await supabase.rpc("messenger_create_job", {
     p_title: input.title,
+    p_job_date: input.jobDate,
+    p_requester_phone: input.requesterPhone,
     p_requester: input.requester,
     p_department: input.department,
     p_messenger_id: input.messengerId,
@@ -176,7 +182,7 @@ export function errorText(error: unknown) {
   if (code === "40001")
     return "งานมีการเปลี่ยนแปลงจากอีกหน้าจอ กรุณารีเฟรชแล้วลองอีกครั้ง";
   if (code === "42501")
-    return "ไม่มีสิทธิ์ดำเนินการ หรือบัญชีถูกระงับ กรุณาติดต่อ Admin";
+    return "ไม่มีสิทธิ์ดำเนินการ หรือบัญชีถูกระงับ กรุณาติดต่อผู้ดูแลระบบ";
   return "เชื่อมต่อหรือบันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
 }
 

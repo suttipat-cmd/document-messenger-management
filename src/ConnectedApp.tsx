@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import App from "./App";
+import Required from "./Required";
+import departments from "./data/departments.json";
+import { today } from "./lib/dates";
 import Manager from "./Manager";
 import Loading from "./Loading";
 import PublicRequest from "./PublicRequest";
@@ -117,7 +120,7 @@ function Workspace() {
       setConnection(
         status === "SUBSCRIBED"
           ? "อัปเดตอัตโนมัติพร้อมใช้งาน"
-          : "กำลังเชื่อมต่อการอัปเดต · ใช้ปุ่มรีเฟรชได้",
+          : "กำลังเชื่อมต่อการอัปเดต · ใช้ปุ่มโหลดใหม่ได้",
       ),
     );
     const onFocus = () => {
@@ -143,7 +146,7 @@ function Workspace() {
     } catch (e) {
       setError(
         committed
-          ? "บันทึกแล้ว แต่โหลดผลล่าสุดไม่สำเร็จ กรุณารีเฟรช"
+          ? "บันทึกแล้ว แต่โหลดผลล่าสุดไม่สำเร็จ กรุณาโหลดใหม่"
           : errorText(e),
       );
       throw e;
@@ -205,7 +208,7 @@ function Workspace() {
         <span className="eyebrow">รอเปิดใช้งาน</span>
         <h1>บัญชียังไม่ได้รับสิทธิ์</h1>
         <p>
-          เข้าสู่ระบบด้วย {session.user.email} แล้ว กรุณาให้ Admin
+          เข้าสู่ระบบด้วย {session.user.email} แล้ว กรุณาให้ผู้ดูแลระบบ
           เปิดใช้งานบัญชี
         </p>
         <button
@@ -256,8 +259,9 @@ function Workspace() {
             onCreate={() => setCreating(true)}
             onRefresh={() => void refresh().catch(() => {})}
             onLogout={() => void logout()}
-            users={snapshot.profiles.map((p) => (
+            users={snapshot.profiles.map((p, index) => (
               <ProfileEditor
+                index={index + 1}
                 key={p.id + String(p.active) + p.role + p.display_name}
                 profile={p}
                 saving={saving}
@@ -279,7 +283,9 @@ function Workspace() {
       {error && (
         <div className="connection-error" role="alert">
           {error}
-          <button onClick={() => void refresh().catch(() => {})}>รีเฟรช</button>
+          <button onClick={() => void refresh().catch(() => {})}>
+            โหลดใหม่
+          </button>
         </div>
       )}
       <div className="mode-strip">
@@ -307,7 +313,7 @@ function Workspace() {
           disabled={saving || refreshing}
           onClick={() => void refresh().catch(() => {})}
         >
-          รีเฟรช
+          โหลดใหม่
         </button>
       </div>
       {creating ? (
@@ -350,7 +356,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="auth-shell">
       <span className="brandmark">m↗</span>
-      <span className="eyebrow">DOCUMENT MESSENGER</span>
+      <span className="eyebrow">รับ–ส่งเอกสาร</span>
       <h1>{signup ? "สร้างบัญชี" : "เข้าสู่ระบบ"}</h1>
 
       <a className="public-entry" href="#/request">
@@ -372,24 +378,24 @@ function Auth({ onDemo }: { onDemo: () => void }) {
             if (result.error) {
               setMessage(
                 signup
-                  ? "สร้างบัญชีไม่สำเร็จ ตรวจสอบข้อมูลหรือติดต่อ Admin"
+                  ? "สร้างบัญชีไม่สำเร็จ ตรวจสอบข้อมูลหรือติดต่อผู้ดูแลระบบ"
                   : "เข้าสู่ระบบไม่สำเร็จ ตรวจสอบอีเมล รหัสผ่าน และการยืนยันอีเมล",
               );
               return;
             }
             if (signup)
               setMessage(
-                "กรุณายืนยันอีเมลจาก Supabase แล้วกลับเข้าสู่ระบบ บัญชีทั่วไปต้องรอ Admin เปิดใช้งาน",
+                "กรุณายืนยันอีเมล แล้วกลับเข้าสู่ระบบ บัญชีทั่วไปต้องรอผู้ดูแลระบบ เปิดใช้งาน",
               );
           } catch {
-            setMessage("ติดต่อ Supabase ไม่สำเร็จ กรุณาลองใหม่");
+            setMessage("เชื่อมต่อระบบไม่สำเร็จ กรุณาลองใหม่");
           } finally {
             setBusy(false);
           }
         }}
       >
         <label className="field">
-          อีเมล
+          อีเมล <Required />
           <input
             required
             type="email"
@@ -399,7 +405,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
           />
         </label>
         <label className="field">
-          รหัสผ่าน
+          รหัสผ่าน <Required />
           <input
             required
             type="password"
@@ -414,9 +420,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
             {message}
           </p>
         )}
-        {!supabase && (
-          <p role="alert">ยังไม่ได้กำหนด Supabase URL และ Publishable Key</p>
-        )}
+        {!supabase && <p role="alert">ยังไม่ได้กำหนด การเชื่อมต่อระบบ</p>}
         <button className="primary" disabled={busy || !supabase}>
           {busy ? (
             <Loading label="กำลังดำเนินการ…" />
@@ -456,6 +460,8 @@ function JobForm({
   onSave: (input: CreateJob) => Promise<void>;
 }) {
   const [form, setForm] = useState<CreateJob>({
+    jobDate: today(),
+    requesterPhone: "",
     title: "",
     requester: "",
     department: "",
@@ -482,13 +488,12 @@ function JobForm({
             [
               ["title", "ชื่องาน"],
               ["requester", "ผู้มอบหมาย"],
-              ["department", "แผนก"],
             ] as const
           ).map(([key, title]) => (
             <label className="field" key={key}>
-              {title}
+              {title} <Required />
               <input
-                required={key !== "department"}
+                required
                 maxLength={key === "title" ? 200 : 120}
                 value={form[key]}
                 onChange={(e) => setForm({ ...form, [key]: e.target.value })}
@@ -496,7 +501,42 @@ function JobForm({
             </label>
           ))}
           <label className="field">
-            Messenger
+            แผนก <Required />
+            <select
+              required
+              value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+            >
+              <option value="">เลือกแผนก</option>
+              {departments.map((d) => (
+                <option key={d}>{d}</option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            วันที่ <Required />
+            <input
+              type="date"
+              min="0001-01-01"
+              max="9999-12-31"
+              required
+              value={form.jobDate}
+              onChange={(e) => setForm({ ...form, jobDate: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            เบอร์ติดต่อผู้มอบหมาย
+            <input
+              type="tel"
+              maxLength={40}
+              value={form.requesterPhone}
+              onChange={(e) =>
+                setForm({ ...form, requesterPhone: e.target.value })
+              }
+            />
+          </label>
+          <label className="field">
+            ผู้รับส่งเอกสาร <Required />
             <select
               required
               value={form.messengerId}
@@ -504,7 +544,7 @@ function JobForm({
                 setForm({ ...form, messengerId: e.target.value })
               }
             >
-              <option value="">เลือก Messenger</option>
+              <option value="">เลือกผู้รับส่งเอกสาร</option>
               {messengers.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.display_name}
@@ -514,8 +554,8 @@ function JobForm({
           </label>
           {!messengers.length && (
             <p className="auth-message">
-              ยังไม่มี Messenger ที่เปิดใช้งาน ให้ผู้ใช้สร้างบัญชี แล้ว Admin
-              เปิดใช้งานผ่านเมนูจัดการบัญชีผู้ใช้
+              ยังไม่มีผู้รับส่งเอกสาร ที่เปิดใช้งาน ให้ผู้ใช้สร้างบัญชี
+              แล้วผู้ดูแลระบบ เปิดใช้งานผ่านเมนูจัดการบัญชีผู้ใช้
             </p>
           )}
           {form.stops.map((stop, i) => (
@@ -538,8 +578,9 @@ function JobForm({
                 )}
               </div>
               <label className="field">
-                ประเภท
+                ประเภท <Required />
                 <select
+                  required
                   value={stop.kind}
                   onChange={(e) =>
                     setForm({
@@ -563,9 +604,9 @@ function JobForm({
                 ] as const
               ).map(([key, title]) => (
                 <label key={key} className="field">
-                  {title}
+                  {title} {key === "name" && <Required />}
                   <input
-                    required={key === "name" || key === "address"}
+                    required={key === "name"}
                     type={key === "phone" ? "tel" : "text"}
                     maxLength={
                       key === "address"
@@ -622,10 +663,12 @@ function JobForm({
 }
 
 function ProfileEditor({
+  index,
   profile,
   saving,
   onSave,
 }: {
+  index: number;
   profile: Snapshot["profiles"][number];
   saving: boolean;
   onSave: (p: Snapshot["profiles"][number]) => Promise<void>;
@@ -640,9 +683,13 @@ function ProfileEditor({
       }}
     >
       <fieldset disabled={saving}>
+        <span className="account-ordinal">
+          <small>ลำดับ</small>
+          {index}
+        </span>
         <span className="code">{profile.email || profile.id.slice(0, 8)}</span>
         <label className="field">
-          ชื่อ
+          ชื่อ <Required />
           <input
             required
             maxLength={120}
@@ -651,16 +698,17 @@ function ProfileEditor({
           />
         </label>
         <label className="field">
-          บทบาท
+          บทบาท <Required />
           <select
+            required
             value={p.role}
             onChange={(e) =>
               setP({ ...p, role: e.target.value as typeof p.role })
             }
           >
-            <option value="messenger">Messenger</option>
-            <option value="super_user">Super User</option>
-            <option value="admin">Admin</option>
+            <option value="messenger">ผู้รับส่งเอกสาร</option>
+            <option value="super_user">ผู้จัดการงาน</option>
+            <option value="admin">ผู้ดูแลระบบ</option>
           </select>
         </label>
         <label className="active-check">

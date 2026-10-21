@@ -17,7 +17,7 @@ end $$;
 set local role authenticated;
 select set_config('request.jwt.claim.sub',current_setting('messenger.admin_qa'),true);
 select public.messenger_set_profile(current_setting('messenger.driver_qa')::uuid,'messenger',true,'QA Driver');
-select set_config('messenger.manager_job', public.messenger_create_job('QA Managed','QA Requester','QA',current_setting('messenger.driver_qa')::uuid,'[{"name":"QA 1","address":"A","kind":"รับเอกสาร"},{"name":"QA 2","address":"B","kind":"ส่งเอกสาร"}]'::jsonb)::text,true);
+select set_config('messenger.manager_job', public.messenger_create_job('QA Managed','QA Requester','บัญชี',current_setting('messenger.driver_qa')::uuid,'[{"name":"QA 1","address":"A","kind":"รับเอกสาร"},{"name":"QA 2","address":"B","kind":"ส่งเอกสาร"}]'::jsonb)::text,true);
 do $$ begin
  begin
   perform public.messenger_create_job('QA Invalid','QA','',current_setting('messenger.driver_qa')::uuid,null);

@@ -18,7 +18,7 @@ Deno.serve(async (req: Request) => {
   const admin=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}})
   if(req.method==='GET'){
    const {data,error}=await admin.rpc('messenger_intake_options')
-   if(error)return reply(503,{message:'โหลดรายชื่อ Messenger ไม่สำเร็จ'})
+   if(error)return reply(503,{message:'โหลดรายชื่อ ผู้รับส่งเอกสาร ไม่สำเร็จ'})
    return reply(200,{messengers:data})
   }
   if(!req.headers.get('content-type')?.startsWith('application/json'))return reply(415,{message:'รูปแบบข้อมูลไม่ถูกต้อง'})
@@ -29,18 +29,18 @@ Deno.serve(async (req: Request) => {
   let body:Record<string,unknown>;try{body=JSON.parse(new TextDecoder().decode(bytes))}catch{return reply(400,{message:'รูปแบบข้อมูลไม่ถูกต้อง'})}
   if(!body||Array.isArray(body)||typeof body!=='object')return reply(400,{message:'รูปแบบข้อมูลไม่ถูกต้อง'})
   if(body.website)return reply(400,{message:'ไม่สามารถรับคำขอได้'})
-  const {requestKey,title,requester,requesterPhone,department,messengerId,stops}=body
+  const {requestKey,jobDate,title,requester,requesterPhone,department,messengerId,stops}=body
   const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  if(typeof requestKey!=='string'||!uuid.test(requestKey)||typeof messengerId!=='string'||!uuid.test(messengerId))return reply(422,{message:'กรุณาเลือก Messenger และตรวจข้อมูลอีกครั้ง'})
+  if(typeof requestKey!=='string'||!uuid.test(requestKey)||typeof messengerId!=='string'||!uuid.test(messengerId))return reply(422,{message:'กรุณาเลือก ผู้รับส่งเอกสาร และตรวจข้อมูลอีกครั้ง'})
   const address=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown'
   // Never store raw IP addresses or forward client Authorization headers.
   const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key+':'+address))
   const bucket=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('')
-  const {data,error}=await admin.rpc('messenger_intake_submit',{p_key:requestKey,p_payload:{title,requester,requesterPhone,department,messengerId,stops},p_bucket:bucket})
+  const {data,error}=await admin.rpc('messenger_intake_submit',{p_key:requestKey,p_payload:{jobDate,title,requester,requesterPhone,department,messengerId,stops},p_bucket:bucket})
   if(error){
    if(error.code==='P0429')return reply(429,{message:'มีการส่งงานจำนวนมาก กรุณาลองใหม่อีกสักครู่'})
    if(error.code==='P0409')return reply(409,{message:'คำขอนี้ถูกใช้แล้ว กรุณารีเฟรชฟอร์มก่อนเริ่มงานใหม่'})
-   if(error.code==='P0404')return reply(422,{message:'Messenger คนนี้ยังไม่พร้อมรับงาน กรุณาโหลดรายชื่อใหม่'})
+   if(error.code==='P0404')return reply(422,{message:'ผู้รับส่งเอกสาร คนนี้ยังไม่พร้อมรับงาน กรุณาโหลดรายชื่อใหม่'})
    if(error.code?.startsWith('22')||error.code?.startsWith('23'))return reply(422,{message:'ข้อมูลไม่ครบหรือยาวเกินกำหนด กรุณาตรวจทุกจุดรับ–ส่ง'})
    return reply(503,{message:'ยังยืนยันผลไม่ได้ กรุณากดส่งอีกครั้งด้วยข้อมูลเดิม'})
   }

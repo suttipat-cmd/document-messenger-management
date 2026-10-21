@@ -3,7 +3,7 @@ with u as (insert into auth.users(id,email) values(gen_random_uuid(),'public-int
  select set_config('messenger.intake_qa',(select id::text from u),true);
 update public.messenger_profiles set active=true,display_name='Public Intake QA' where id=current_setting('messenger.intake_qa')::uuid;
 select set_config('messenger.intake_key',gen_random_uuid()::text,true);
-select set_config('messenger.intake_payload',jsonb_build_object('title','PUBLIC INTAKE QA','requester','QA','requesterPhone','00000','department','QA','messengerId',current_setting('messenger.intake_qa'),'stops',jsonb_build_array(jsonb_build_object('name','Pickup','address','QA Address','kind','รับเอกสาร','contact','','phone',''),jsonb_build_object('name','Delivery','address','QA Address 2','kind','ส่งเอกสาร','contact','','phone','')))::text,true);
+select set_config('messenger.intake_payload',jsonb_build_object('title','PUBLIC INTAKE QA','requester','QA','requesterPhone','00000','department','บัญชี','messengerId',current_setting('messenger.intake_qa'),'stops',jsonb_build_array(jsonb_build_object('name','Pickup','address','QA Address','kind','รับเอกสาร','contact','','phone',''),jsonb_build_object('name','Delivery','address','QA Address 2','kind','ส่งเอกสาร','contact','','phone','')))::text,true);
 -- Isolate test throttle counters inside this rolled-back transaction.
 update messenger_private.intake_limits set used=0 where bucket in ('global:ten','global:day');
 set local role anon;

@@ -6,6 +6,7 @@ export type PublicStop = {
   phone: string;
 };
 export type PublicPayload = {
+  jobDate: string;
   title: string;
   requester: string;
   requesterPhone: string;

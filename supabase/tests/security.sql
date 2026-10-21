@@ -4,9 +4,9 @@ with u as (insert into auth.users(id,email) values(gen_random_uuid(),'messenger-
 with u as (insert into auth.users(id,email) values(gen_random_uuid(),'messenger-qa-b@example.invalid') returning id)
  select set_config('messenger.qa_b',(select id::text from u),true);
 update public.messenger_profiles set active=true where id in(current_setting('messenger.qa_a')::uuid,current_setting('messenger.qa_b')::uuid);
-with j as (insert into public.messenger_jobs(title,requester,messenger_id) values('QA A','QA',current_setting('messenger.qa_a')::uuid) returning id)
+with j as (insert into public.messenger_jobs(title,requester,department,messenger_id) values('QA A','QA','บัญชี',current_setting('messenger.qa_a')::uuid) returning id)
  select set_config('messenger.qa_job_a',(select id::text from j),true);
-with j as (insert into public.messenger_jobs(title,requester,messenger_id) values('QA B','QA',current_setting('messenger.qa_b')::uuid) returning id)
+with j as (insert into public.messenger_jobs(title,requester,department,messenger_id) values('QA B','QA','บัญชี',current_setting('messenger.qa_b')::uuid) returning id)
  select set_config('messenger.qa_job_b',(select id::text from j),true);
 with s as (insert into public.messenger_stops(job_id,name,address,kind) values(current_setting('messenger.qa_job_a')::uuid,'QA Stop','QA Address','ส่งเอกสาร') returning id)
  select set_config('messenger.qa_stop',(select id::text from s),true);

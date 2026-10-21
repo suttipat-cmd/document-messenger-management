@@ -1375,10 +1375,9 @@ main {
 }
 .management-row {
   display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(100px, 1fr) minmax(
-      90px,
-      1fr
-    ) 130px 100px;
+  grid-template-columns:
+    minmax(180px, 2fr) minmax(100px, 1fr) minmax(90px, 1fr)
+    130px 100px;
   gap: 16px;
   width: 100%;
   text-align: left;
@@ -1800,5 +1799,166 @@ main {
 .management-stop .management-actions {
   margin-top: 10px;
 }
-.public-main .panel{display:grid;gap:12px}.public-main .panel .field{min-width:0}.public-main .panel h2{margin:0}.public-main .public-fields{gap:14px}
-@media(min-width:800px){.public-main form>.panel:first-child{grid-template-columns:1fr 1fr}.public-main form>.panel:first-child>h2,.public-main form>.panel:first-child>.public-fields,.public-main form>.panel:first-child>.field:first-of-type{grid-column:1/-1}}
+.public-main .panel {
+  display: grid;
+  gap: 12px;
+}
+.public-main .panel .field {
+  min-width: 0;
+}
+.public-main .panel h2 {
+  margin: 0;
+}
+.public-main .public-fields {
+  gap: 14px;
+}
+@media (min-width: 800px) {
+  .public-main form > .panel:first-child {
+    grid-template-columns: 1fr 1fr;
+  }
+  .public-main form > .panel:first-child > h2,
+  .public-main form > .panel:first-child > .public-fields,
+  .public-main form > .panel:first-child > .field:first-of-type {
+    grid-column: 1/-1;
+  }
+}
+.required-mark {
+  display: inline !important;
+  color: #d53939 !important;
+  font-weight: 700;
+  margin-left: 2px;
+  font-size: 13px !important;
+}
+.management-row {
+  grid-template-columns:
+    38px 92px 110px minmax(130px, 1.7fr) minmax(105px, 1.2fr)
+    minmax(100px, 1fr) 105px 108px 76px;
+  gap: 10px;
+  padding: 12px;
+  font-size: 12px;
+}
+.management-row .code {
+  font-size: 11px;
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+.management-row b {
+  margin: 0;
+  font-size: 12px;
+}
+.management-row .ordinal {
+  color: #8c9a9f;
+}
+.status-tag.new {
+  background: #fff3d8;
+  color: #966514;
+}
+.status-tag.active {
+  background: #e8f1ff;
+  color: #2b67b3;
+}
+.status-tag.returning {
+  background: #f3eafd;
+  color: #8055a7;
+}
+.status-tag.done {
+  background: #e6f4eb;
+  color: #2b7849;
+}
+.management-stats .summary-status.new {
+  background: #fffaf0;
+  border-color: #f0dfb9;
+}
+.management-stats .summary-status.active {
+  background: #f2f7ff;
+  border-color: #d4e3f9;
+}
+.management-stats .summary-status.returning {
+  background: #f8f3fc;
+  border-color: #e6d9f0;
+}
+.management-stats .summary-status.done {
+  background: #f0f8f3;
+  border-color: #d5e8db;
+}
+.management-stats .summary-status.selected {
+  outline: 2px solid #4e8071;
+  outline-offset: 1px;
+}
+.management-detail {
+  position: fixed;
+  right: 0;
+  z-index: 20;
+  box-shadow: -10px 0 40px #263d4420;
+}
+.management-users .profile-editor fieldset {
+  grid-template-columns: 40px 1.5fr 1fr 130px 105px 70px;
+  gap: 12px;
+}
+.account-ordinal {
+  display: grid;
+  gap: 6px;
+  color: #73888b;
+  font-size: 12px;
+}
+.account-ordinal small {
+  font-size: 10px;
+}
+.job-date {
+  color: #778c91;
+  font-size: 12px;
+}
+@media (max-width: 1200px) {
+  .management-row {
+    grid-template-columns: 38px 1fr 1fr;
+    gap: 10px;
+  }
+  .management-row.table-heading {
+    display: none;
+  }
+  .management-row > span:first-child {
+    grid-column: auto;
+  }
+  .management-row > span {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .management-row > span[data-label]:before {
+    content: attr(data-label);
+    font-size: 10px;
+    color: #89979d;
+  }
+  .management-row .job-title {
+    grid-column: 2/-1;
+  }
+  .management-users .profile-editor fieldset {
+    grid-template-columns: 40px 1fr 1fr;
+  }
+  .management-users .code {
+    grid-column: 2/-1;
+  }
+  .management-users .field {
+    grid-column: auto;
+  }
+}
+@media (max-width: 600px) {
+  .management-users .profile-editor fieldset {
+    grid-template-columns: 34px 1fr;
+  }
+  .management-users .field {
+    grid-column: 1/-1;
+  }
+  .management-users .active-check {
+    grid-column: 1/-1;
+  }
+  .management-row {
+    font-size: 12px;
+  }
+  .management-row .code {
+    font-size: 11px;
+  }
+  .management-main {
+    padding: 12px;
+  }
+}

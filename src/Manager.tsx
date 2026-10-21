@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import type { Job } from "./App";
 import type { Action } from "./lib/workspace";
 import type { Snapshot } from "./lib/workspace";
+import { dateLabel } from "./lib/dates";
 import Loading from "./Loading";
 type Command = (
   job: Job,
@@ -50,7 +51,7 @@ export default function Manager({
     <div className="management-shell">
       <aside className="management-sidebar">
         <a className="management-brand" href="#/">
-          m↗ <b>Messenger</b>
+          m↗ <b>รับ–ส่งเอกสาร</b>
         </a>
         <nav aria-label="เมนูจัดการ">
           <button
@@ -72,7 +73,9 @@ export default function Manager({
         <div className="management-account">
           <b>{snapshot.profile?.display_name}</b>
           <small>
-            {snapshot.profile?.role === "admin" ? "Admin" : "Super User"}
+            {snapshot.profile?.role === "admin"
+              ? "ผู้ดูแลระบบ"
+              : "ผู้จัดการงาน"}
           </small>
           <button disabled={busy} onClick={onLogout}>
             ออกจากระบบ
@@ -82,12 +85,11 @@ export default function Manager({
       <main className="management-main">
         <header className="management-topbar">
           <div>
-            <span className="eyebrow">WORKSPACE</span>
             <h1>{tab === "users" ? "บัญชีผู้ใช้" : "งานรับ–ส่งเอกสาร"}</h1>
           </div>
           <div className="management-actions">
             <button className="secondary" disabled={busy} onClick={onRefresh}>
-              {busy ? <Loading /> : "↻ รีเฟรช"}
+              {busy ? <Loading /> : "↻ โหลดใหม่"}
             </button>
             <button className="primary" disabled={busy} onClick={onCreate}>
               + สร้างงาน
@@ -102,7 +104,9 @@ export default function Manager({
               {(["new", "active", "returning", "done"] as const).map((s) => (
                 <button
                   key={s}
-                  className={status === s ? "selected" : ""}
+                  className={
+                    "summary-status " + s + (status === s ? " selected" : "")
+                  }
                   onClick={() => setStatus(status === s ? "all" : s)}
                 >
                   <span>{labels[s]}</span>
@@ -140,29 +144,48 @@ export default function Manager({
                 aria-label="งานทั้งหมด"
               >
                 <div className="management-row table-heading" role="row">
-                  <span>เลขงาน / ชื่องาน</span>
-                  <span>ผู้มอบหมาย</span>
-                  <span>Messenger</span>
-                  <span>สถานะ</span>
-                  <span>ความคืบหน้า</span>
+                  {[
+                    "ลำดับ",
+                    "วันที่",
+                    "เลขงาน",
+                    "ชื่องาน",
+                    "แผนก",
+                    "ผู้มอบหมาย",
+                    "ผู้รับส่งเอกสาร",
+                    "สถานะ",
+                    "ความคืบหน้า",
+                  ].map((h) => (
+                    <span role="columnheader" key={h}>
+                      {h}
+                    </span>
+                  ))}
                 </div>
-                {jobs.map((j) => (
+                {jobs.map((j, index) => (
                   <button
                     key={j.id}
                     className={
-                      "management-row " + (selected === j.id ? "selected" : "")
+                      "management-row job-status-" +
+                      j.status +
+                      " " +
+                      (selected === j.id ? "selected" : "")
                     }
                     onClick={() => setSelected(j.id)}
                   >
-                    <span>
-                      <small className="code">{j.id}</small>
+                    <span className="ordinal" data-label="ลำดับ">
+                      {index + 1}
+                    </span>
+                    <span data-label="วันที่">{dateLabel(j.jobDate)}</span>
+                    <span className="code" data-label="เลขงาน">
+                      {j.id}
+                    </span>
+                    <span className="job-title" data-label="ชื่องาน">
                       <b>{j.title}</b>
                     </span>
-                    <span>
-                      {j.person}
-                      <small>{j.department}</small>
+                    <span data-label="แผนก">{j.department || "—"}</span>
+                    <span data-label="ผู้มอบหมาย">{j.person}</span>
+                    <span data-label="ผู้รับส่งเอกสาร">
+                      {j.messengerName || "—"}
                     </span>
-                    <span>{j.messengerName || "—"}</span>
                     <span>
                       <i className={"status-tag " + j.status}>
                         {labels[j.status]}
@@ -209,11 +232,9 @@ function JobPanel({
   onCommand: Command;
   onClose: () => void;
 }) {
-  const [note, setNote] = useState("");
   async function run(action: Action, stopId?: string) {
     try {
-      await onCommand(job, action, stopId, note);
-      setNote("");
+      await onCommand(job, action, stopId, "");
     } catch {
       /* workspace error */
     }
@@ -229,6 +250,10 @@ function JobPanel({
       <h2>{job.title}</h2>
       <span className={"status-tag " + job.status}>{labels[job.status]}</span>
       <dl>
+        <dt>วันที่</dt>
+        <dd>{dateLabel(job.jobDate)}</dd>
+        <dt>แผนก</dt>
+        <dd>{job.department || "—"}</dd>
         <dt>ผู้มอบหมาย</dt>
         <dd>{job.person}</dd>
         {job.requesterPhone && (
@@ -239,7 +264,7 @@ function JobPanel({
             </dd>
           </>
         )}
-        <dt>Messenger</dt>
+        <dt>ผู้รับส่งเอกสาร</dt>
         <dd>{job.messengerName || "—"}</dd>
       </dl>
       {job.status === "new" && (
@@ -250,36 +275,6 @@ function JobPanel({
         >
           {busy ? <Loading label="กำลังบันทึก…" /> : "รับงาน"}
         </button>
-      )}
-      {(job.status === "active" || job.status === "returning") && (
-        <div className="management-command">
-          <label className="field">
-            หมายเหตุ / เหตุผล
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              maxLength={2000}
-              disabled={busy}
-            />
-          </label>
-          {job.status === "active" ? (
-            <button
-              className="secondary"
-              disabled={busy || !note.trim()}
-              onClick={() => void run("start_return")}
-            >
-              นำเอกสารกลับคืน
-            </button>
-          ) : (
-            <button
-              className="primary"
-              disabled={busy}
-              onClick={() => void run("confirm_return")}
-            >
-              ยืนยันคืนเอกสารแล้ว
-            </button>
-          )}
-        </div>
       )}
       <h3>จุดรับ–ส่ง</h3>
       {job.stops.map((s, i) => (
@@ -300,24 +295,6 @@ function JobPanel({
             </p>
           )}
           {s.note && <p>{s.note}</p>}
-          {job.status === "active" && s.status !== "done" && (
-            <div className="management-actions">
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={() => void run("complete_stop", s.id)}
-              >
-                สำเร็จ
-              </button>
-              <button
-                className="secondary"
-                disabled={busy || !note.trim()}
-                onClick={() => void run("retry_stop", s.id)}
-              >
-                รอทำใหม่
-              </button>
-            </div>
-          )}
         </section>
       ))}
       {job.returnReason && <p>เหตุผลคืนเอกสาร: {job.returnReason}</p>}

@@ -47,8 +47,8 @@ it("shows the real Auth login screen and submits only credentials to Supabase Au
   const u = userEvent.setup();
   render(<ConnectedApp />);
   await screen.findByRole("heading", { name: "เข้าสู่ระบบ" });
-  await u.type(screen.getByLabelText("อีเมล"), "test@example.invalid");
-  await u.type(screen.getByLabelText("รหัสผ่าน"), "test-password");
+  await u.type(screen.getByLabelText(/อีเมล/), "test@example.invalid");
+  await u.type(screen.getByLabelText(/รหัสผ่าน/), "test-password");
   await u.click(screen.getByRole("button", { name: "เข้าสู่ระบบ" }));
   await waitFor(() =>
     expect(mocks.signIn).toHaveBeenCalledWith({
