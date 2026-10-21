@@ -1,58 +1,71 @@
 # Document Messenger Management System
 
-React + TypeScript + Vite. Mobile-first messenger workspace for 1–20 internal users.
+Mobile-first React + TypeScript + Vite workspace for approximately 1–20 internal users.
 
-## Development
+## Run
 
 ```sh
 npm ci
+cp .env.example .env.local
 npm run dev
+npm test
 npm run build
 npm run lint
-npm test
 ```
 
-## Required architecture
+Local URL: http://127.0.0.1:5173/document-messenger-management/
 
-- GitHub Pages: frontend hosting only.
-- Supabase Free: PostgreSQL, Auth, RLS, Realtime and Edge Functions.
-- Google Workspace Drive: all documents and evidence photos.
-- Upload, view and download must pass backend authorization; no public Drive links.
-- Never place Google credentials or Supabase secret/service-role keys in frontend or VITE variables.
-- No additional hosting or storage services without need.
+`.env.example` contains the project URL and a **publishable** key, which is designed for frontend use. The client rejects secret and legacy JWT keys. Never add Google credentials, database passwords, service-role keys, or `sb_secret_` keys to Vite environment variables or frontend code. `.env.local` is ignored.
 
-## Roles and workflow
+## Current phase
 
-Admin manages everything, including accounts and roles. Super User manages all jobs, cancellation and messenger reassignment through desktop UI. Public requesters can only create jobs and select a messenger without an account; form fields remain to be designed. Messenger uses smartphone UI to accept assigned jobs, reorder stops freely and update each stop with photo evidence.
+Supabase Auth, RLS, persistent jobs/stops/route order, server-generated event history, optimistic version checks and Realtime are connected. Data loading is paginated and refreshes on window focus. Mutations wait for the backend; errors never substitute demo jobs or invent success. Realtime notifications are batched to reduce duplicate fetches.
 
-Jobs may contain multiple pickup/delivery stops with no precedence restrictions. Failed stops can be revisited. Returning a job includes physical document return and requires photo-confirmed handover before completion.
+**Photo evidence is optional in this phase and attachment is disabled.** The UI reserves a clearly labelled placeholder. No files are uploaded or stored. Physical return still requires an explicit confirmation before the job closes. Google Workspace Drive integration and mandatory photos are a later phase.
 
-## UX acceptance
+Demo mode is an explicit separate choice on the login screen. Demo changes are memory-only and do not create backend data.
 
-Bottom navigation, task cards, one-handed primary actions and minimum 48px touch targets. Validate full flows at 360px and 390px, plus other responsive sizes. Avoid horizontal overflow, wide tables and oversized modals.
+## Roles and onboarding
 
-## Current state
+- **Admin:** all visible jobs, management job creation, account names/roles/activation, operational actions. Removing the last active Admin is rejected.
+- **Super User:** all visible jobs, management job creation and operational actions; cannot manage account permissions.
+- **Messenger:** only assigned jobs; accept, freely reorder stops across active jobs, complete/retry stops, and confirm physical document return.
+- **Public requester:** public submission form and its restricted backend endpoint remain pending; anonymous visitors currently cannot read or mutate operational data.
 
-Interactive Messenger UI prototype. Backend, authentication, Drive integration and deployment are not configured yet. Public submission and desktop management screens are not implemented. Next: agree form fields and schema/RLS, then integrate backend.
+The approved initial Admin is `suttipat@forwardinsight.co.th`. A private, one-time bootstrap activates Admin only when Supabase Auth verifies that exact email. User-editable metadata never determines permissions. The bootstrap is consumed after use. All other signups start as inactive Messengers, regardless of supplied metadata.
 
-## Messenger prototype — 22 October 2026
+1. Create an account and verify its email, then sign in.
+2. Admin opens **จัดการบัญชีผู้ใช้** and activates the verified company's users, assigns roles and sets names.
+3. Admin/Super User opens **สร้างงาน**, selects an active Messenger and adds pickup/delivery stops.
+4. Messenger signs in on their own device and receives only their assignments.
 
-Interactive Thai mobile-first prototype: assigned work, acceptance, unrestricted stop reordering, per-stop photo selection, completion, retry reasons, physical return with photo confirmation, history and demo reset. Demo data and photos exist only in React memory and disappear on reload. No file uploads are sent to any server. Photos are limited to 15 MB each for this prototype.
+The first Admin has signed in successfully against the live project. Supabase's default email sender has development restrictions; use Dashboard provisioning or configure company SMTP when onboarding addresses outside the project's permitted team. Password resets and broader admin job editing/cancellation/reassignment are not yet implemented.
 
-Verified: build/lint; 360px and 390px with no horizontal overflow and visible enabled buttons at least 48px; acceptance, reorder, retry and physical-return states; photo-required buttons disabled without evidence. Full photo completion/camera capture still requires device testing: browser automation file selection was blocked by the extension file-access setting. Viewport tests simulate widths; physical smartphone testing remains pending.
+## Supabase deployment
 
-## Supabase environment
+- Organization: `patcharee@effcl.com's Org` (Free)
+- Project: `document-messenger-management`
+- Reference: `lhyxpdlariunsyzxbtsa`
+- URL: https://lhyxpdlariunsyzxbtsa.supabase.co
+- Actual region: `ap-south-1` (Mumbai)
+- Auth Site URL currently points to the local application above. Update it and the redirect allowlist when deploying GitHub Pages.
 
-- Organization: patcharee@effcl.com's Org (Free)
-- Project: document-messenger-management
-- Reference: lhyxpdlariunsyzxbtsa
-- API URL: https://lhyxpdlariunsyzxbtsa.supabase.co
-- Actual provisioned region: ap-south-1 (Mumbai), verified in dashboard.
+SQL in `supabase/migrations/` was created with the Supabase CLI and applied in order through the Dashboard SQL Editor because the connected MCP account does not have access to this project. These scripts are **already applied** to the live project. They are not registered in CLI migration history; reconcile the baseline before using `supabase db push` against this existing database. Apply in order to a fresh project instead of rerunning the initial table-creation migration on this one.
 
-The prototype does not yet connect to this backend. Do not use Supabase Storage for documents or evidence; use Google Workspace Drive through authorized Edge Functions. Public form fields and the database schema remain to be designed.
+Tables: `messenger_profiles`, `messenger_jobs`, `messenger_stops`, `messenger_events`. All have RLS and no anonymous grants. Authenticated clients have SELECT only; writes use narrow, transactional RPC wrappers. The underlying functions are in non-exposed `messenger_private`, with explicit execute grants, fixed search paths, identity/role/ownership checks and server-generated history. Role changes take effect from database-owned profiles rather than editable JWT user metadata.
 
-## OMS-inspired UI refinement
+RPCs: `messenger_command`, `messenger_reorder`, `messenger_create_job`, `messenger_set_profile`. The Data API must expose only the usual public API schema; do not expose `messenger_private`. All four public tables are published to Supabase Realtime.
 
-Compact clickable status summaries, direct job acceptance, resume action, search by job/place/requester, dedicated pending-return filter, cross-job stop ordering, pickup/delivery/retry filters, navigation links and optional telephone links, and time-filtered history with an in-memory event timeline. Telephone actions stay disabled without a supplied number. Google Maps links open a place search using sample address text; exact location accuracy is not validated.
+## Verification
 
-`npm test` covers acceptance/search/cross-job reorder, photo-required completion of every stop, retry reasons, return evidence, read-only returned jobs, history and reset. These are component interaction tests using jsdom and FileReader, not real device camera or backend upload tests. Browser checks cover 360px and 390px; photo capture on a physical smartphone remains pending. Events and evidence are not durable or authoritative until backend integration.
+- Component tests: acceptance/search/cross-job reorder, photo-free retry/completion/return, returned-job read-only behavior, backend failure behavior, Auth login and inactive account gating.
+- `supabase/tests/security.sql`: live transaction tests for cross-user isolation, anonymous denial, no direct table writes, stale-version rejection, physical return and audit trail.
+- `supabase/tests/manager_and_completion.sql`: live transaction tests for metadata privilege rejection, verified one-time bootstrap, profile activation, manager creation, reorder and completion without photos.
+- SQL tests roll back all temporary users/jobs; they do not set passwords or send email.
+- Live HTTP probes with the publishable key: anonymous table reads and commands return 401 / 42501.
+- Mobile viewport checks at 360px and 390px; prior tablet checks at 768px. Physical smartphone camera testing is deferred with photo integration.
+- Security Advisor: 0 errors after restricting public access to Supabase's automatic-RLS helper. The remaining Auth warning is disabled leaked-password protection; no paid-plan upgrade was made.
+
+## Architecture constraints
+
+GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and future Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Public form field design, the public submission endpoint, full desktop management, Drive and GitHub Pages deployment remain subsequent work.

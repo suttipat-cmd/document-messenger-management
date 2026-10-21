@@ -8,7 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
-
+import type { RemoteWorkspace } from "./App";
 beforeEach(() => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
 });
@@ -16,15 +16,10 @@ afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
-const evidence = () =>
-  new File([new Uint8Array([137, 80, 78, 71])], "evidence.png", {
-    type: "image/png",
-  });
 const findJob = (code: string) =>
   screen.getByText(code, { selector: ".task .code" }).closest("article")!;
-
-describe("Messenger prototype workflows", () => {
-  it("accepts a job once, searches it and orders stops across jobs", async () => {
+describe("Messenger Phase 1", () => {
+  it("accepts, searches and reorders stops across jobs", async () => {
     const u = userEvent.setup();
     render(<App />);
     await u.click(
@@ -37,7 +32,7 @@ describe("Messenger prototype workflows", () => {
       screen.getByRole("textbox", { name: "ค้นหางานหรือสถานที่" }),
       "สัญญา",
     );
-    expect(screen.getAllByRole("article").length).toBe(1);
+    expect(screen.getAllByRole("article")).toHaveLength(1);
     await u.click(screen.getByRole("button", { name: "ล้างคำค้นหา" }));
     await u.click(screen.getByRole("button", { name: "จุดรับ–ส่ง" }));
     await u.click(screen.getByRole("button", { name: "⇅ จัดลำดับ" }));
@@ -47,7 +42,7 @@ describe("Messenger prototype workflows", () => {
     expect(
       screen
         .getAllByRole("heading", { level: 3 })
-        .map((x) => x.textContent)
+        .map((e) => e.textContent)
         .slice(0, 3),
     ).toEqual(["ธนาคารกสิกรไทย", "สำนักงานพระราม 9", "อาคารสาทรธานี"]);
     await u.click(screen.getByRole("button", { name: "✓ เสร็จแล้ว" }));
@@ -55,21 +50,18 @@ describe("Messenger prototype workflows", () => {
       screen.getByRole("textbox", { name: "ค้นหางานหรือสถานที่" }),
       "จีทาวเวอร์",
     );
-    expect(screen.getAllByRole("article").length).toBe(1);
+    expect(screen.getAllByRole("article")).toHaveLength(1);
   });
-
-  it("requires evidence for success, records a retry reason, and closes only after all stops finish", async () => {
+  it("records retry reasons and completes every stop without requiring a photo in Phase 1", async () => {
     const u = userEvent.setup();
     render(<App />);
     await u.click(
       within(findJob("MSG-0261")).getByRole("button", { name: "ทำต่อ →" }),
     );
     expect(
-      (
-        screen.getByRole("button", {
-          name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓",
-        }) as HTMLButtonElement
-      ).disabled,
+      screen
+        .getByRole("button", { name: /แนบรูปหลักฐาน · Phase ถัดไป/ })
+        .matches(":disabled"),
     ).toBe(true);
     await u.click(screen.getByRole("button", { name: "เก็บไว้กลับมาทำใหม่" }));
     expect(screen.getByRole("status").textContent).toContain("ระบุเหตุผล");
@@ -78,59 +70,34 @@ describe("Messenger prototype workflows", () => {
     expect(
       screen.getByText("กลับมาทำใหม่: ธนาคารกสิกรไทย · สถานที่ปิด"),
     ).toBeTruthy();
-    const bank = screen
-      .getByRole("heading", { name: "ธนาคารกสิกรไทย" })
-      .closest("article")!;
-    await u.click(within(bank).getByRole("button", { name: "ดำเนินการ" }));
-    await u.upload(
-      screen.getByLabelText("ถ่ายหรือเลือกรูปหลักฐาน"),
-      evidence(),
-    );
-    await waitFor(() =>
-      expect(
-        (
-          screen.getByRole("button", {
-            name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓",
-          }) as HTMLButtonElement
-        ).disabled,
-      ).toBe(false),
+    await u.click(
+      within(
+        screen
+          .getByRole("heading", { name: "ธนาคารกสิกรไทย" })
+          .closest("article")!,
+      ).getByRole("button", { name: "ดำเนินการ" }),
     );
     await u.click(
-      screen.getByRole("button", { name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓" }),
-    );
-    expect(
-      screen.getByText("สำเร็จ: ธนาคารกสิกรไทย · มีรูปหลักฐาน"),
-    ).toBeTruthy();
-    const finalStop = screen
-      .getByRole("heading", { name: "อาคารสาทรธานี" })
-      .closest("article")!;
-    await u.click(within(finalStop).getByRole("button", { name: "ดำเนินการ" }));
-    await u.upload(
-      screen.getByLabelText("ถ่ายหรือเลือกรูปหลักฐาน"),
-      evidence(),
-    );
-    await waitFor(() =>
-      expect(
-        (
-          screen.getByRole("button", {
-            name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓",
-          }) as HTMLButtonElement
-        ).disabled,
-      ).toBe(false),
+      screen.getByRole("button", { name: "ยืนยันดำเนินการสำเร็จ ✓" }),
     );
     await u.click(
-      screen.getByRole("button", { name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓" }),
+      within(
+        screen
+          .getByRole("heading", { name: "อาคารสาทรธานี" })
+          .closest("article")!,
+      ).getByRole("button", { name: "ดำเนินการ" }),
+    );
+    await u.click(
+      screen.getByRole("button", { name: "ยืนยันดำเนินการสำเร็จ ✓" }),
     );
     expect(
       screen.getByRole("heading", { name: "✓ งานเสร็จสิ้น" }),
     ).toBeTruthy();
     await u.click(screen.getByRole("button", { name: "ประวัติ" }));
-    expect(findJob("MSG-0261")).toBeTruthy();
     await u.selectOptions(screen.getByRole("combobox"), "today");
     expect(findJob("MSG-0261")).toBeTruthy();
   });
-
-  it("requires return evidence and keeps unfinished returned stops read-only in history", async () => {
+  it("confirms physical return without photos and keeps returned stops read-only", async () => {
     const u = userEvent.setup();
     render(<App />);
     await u.click(
@@ -138,45 +105,73 @@ describe("Messenger prototype workflows", () => {
         name: "ยืนยันคืนเอกสาร",
       }),
     );
-    expect(
-      (
-        screen.getByRole("button", {
-          name: "ยืนยันคืนเอกสารและปิดงาน",
-        }) as HTMLButtonElement
-      ).disabled,
-    ).toBe(true);
-    await u.upload(
-      screen.getByLabelText("ถ่ายหรือเลือกรูปหลักฐาน"),
-      evidence(),
-    );
-    await waitFor(() =>
-      expect(
-        (
-          screen.getByRole("button", {
-            name: "ยืนยันคืนเอกสารและปิดงาน",
-          }) as HTMLButtonElement
-        ).disabled,
-      ).toBe(false),
-    );
     await u.click(
       screen.getByRole("button", { name: "ยืนยันคืนเอกสารและปิดงาน" }),
     );
-    expect(
-      screen.getByText("คืนเอกสารให้ผู้มอบหมายสำเร็จ · มีรูปหลักฐาน"),
-    ).toBeTruthy();
+    expect(screen.getByText(/คืนเอกสารให้ผู้มอบหมายสำเร็จ/)).toBeTruthy();
     await u.click(screen.getByRole("button", { name: "ดูหลักฐาน" }));
     expect(
-      screen.queryByRole("button", { name: "ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓" }),
+      screen.queryByRole("button", { name: "ยืนยันดำเนินการสำเร็จ ✓" }),
     ).toBeNull();
     expect(
       screen.getByText("จุดนี้ยังไม่สำเร็จ เอกสารถูกคืนให้ผู้มอบหมายแล้ว"),
     ).toBeTruthy();
-    await u.click(screen.getByRole("button", { name: "บัญชี" }));
-    await u.click(screen.getByRole("button", { name: "รีเซ็ตข้อมูลตัวอย่าง" }));
+  });
+  it("sends authenticated commands and does not invent success after a backend failure", async () => {
+    const u = userEvent.setup();
+    const onCommand = vi.fn().mockRejectedValue(new Error("Network"));
+    const remote: RemoteWorkspace = {
+      jobs: [
+        {
+          id: "LIVE-1",
+          dbId: "uuid-1",
+          version: 3,
+          title: "Live Job",
+          person: "Requester",
+          department: "",
+          status: "active",
+          stops: [
+            {
+              id: "stop-1",
+              name: "Live Stop",
+              address: "Live Address",
+              kind: "ส่งเอกสาร",
+              status: "pending",
+            },
+          ],
+        },
+      ],
+      order: ["stop-1"],
+      profile: {
+        id: "user-1",
+        display_name: "Live User",
+        role: "messenger",
+        active: true,
+      },
+      saving: false,
+      onCommand,
+      onReorder: vi.fn(),
+      onLogout: vi.fn(),
+      onCreate: vi.fn(),
+    };
+    render(<App remote={remote} />);
+    await u.click(screen.getByRole("button", { name: "ทำต่อ →" }));
+    await u.click(
+      screen.getByRole("button", { name: "ยืนยันดำเนินการสำเร็จ ✓" }),
+    );
+    await waitFor(() =>
+      expect(onCommand).toHaveBeenCalledWith(
+        remote.jobs[0],
+        "complete_stop",
+        "stop-1",
+        "",
+      ),
+    );
+    expect(screen.getByRole("status").textContent).toContain(
+      "ยังยืนยันผลไม่ได้",
+    );
     expect(
-      within(findJob("MSG-0263")).getByRole("button", {
-        name: "ยืนยันคืนเอกสาร",
-      }),
-    ).toBeTruthy();
+      screen.queryByRole("heading", { name: "✓ งานเสร็จสิ้น" }),
+    ).toBeNull();
   });
 });
