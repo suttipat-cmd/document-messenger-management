@@ -13,6 +13,8 @@ npm run build
 npm run lint
 ```
 
+Production: https://suttipat-cmd.github.io/document-messenger-management/
+
 Local URL: http://127.0.0.1:5173/document-messenger-management/
 
 `.env.example` contains the project URL and a **publishable** key, which is designed for frontend use. The client rejects secret and legacy JWT keys. Never add Google credentials, database passwords, service-role keys, or `sb_secret_` keys to Vite environment variables or frontend code. `.env.local` is ignored.
@@ -48,7 +50,7 @@ The first Admin has signed in successfully against the live project. Supabase's 
 - Reference: `lhyxpdlariunsyzxbtsa`
 - URL: https://lhyxpdlariunsyzxbtsa.supabase.co
 - Actual region: `ap-south-1` (Mumbai)
-- Auth Site URL currently points to the local application above. Update it and the redirect allowlist when deploying GitHub Pages.
+- Auth Site URL points to Production. The exact Production and local URLs above are in the redirect allowlist.
 
 SQL in `supabase/migrations/` was created with the Supabase CLI and applied in order through the Dashboard SQL Editor because the connected MCP account does not have access to this project. These scripts are **already applied** to the live project. They are not registered in CLI migration history; reconcile the baseline before using `supabase db push` against this existing database. Apply in order to a fresh project instead of rerunning the initial table-creation migration on this one.
 
@@ -68,4 +70,8 @@ RPCs: `messenger_command`, `messenger_reorder`, `messenger_create_job`, `messeng
 
 ## Architecture constraints
 
-GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and future Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Public form field design, the public submission endpoint, full desktop management, Drive and GitHub Pages deployment remain subsequent work.
+GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and future Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Public form field design, the public submission endpoint, full desktop management, Drive remain subsequent work.
+
+## GitHub Pages
+
+The repository is public by owner approval. `.github/workflows/deploy.yml` tests, lints, builds and deploys on pushes to `main`, with manual dispatch available. Only the Supabase publishable configuration is embedded. GitHub Pages serves `dist` over HTTPS; the backend remains Supabase. The initial production deployment passed all jobs.
