@@ -1,3 +1,4 @@
+import Loading from "./Loading";
 import { useEffect, useRef, useState } from "react";
 import {
   IntakeError,
@@ -127,9 +128,6 @@ export default function PublicRequest() {
               งานเข้ากองงานของ Messenger ที่เลือกแล้ว
               กรุณาเก็บเลขงานนี้ไว้สำหรับติดต่อผู้รับผิดชอบ
             </p>
-            <p className="hint">
-              ผู้กรอกฟอร์มไม่มีสิทธิ์เปิดดูหรือแก้ไขรายการงานอื่น
-            </p>
             <button className="primary" onClick={reset}>
               สร้างงานใหม่
             </button>
@@ -138,11 +136,6 @@ export default function PublicRequest() {
           <>
             <span className="eyebrow">ไม่ต้องสมัครสมาชิก</span>
             <h1>{review ? "ตรวจสอบก่อนส่ง" : "สร้างงานรับ–ส่งเอกสาร"}</h1>
-            <p className="subtitle">
-              {review
-                ? "ตรวจผู้มอบหมาย Messenger และทุกจุดให้ถูกต้อง"
-                : "เลือก Messenger และระบุจุดรับ–ส่งที่ต้องการ"}
-            </p>
             {error && (
               <div className="public-error" role="alert">
                 {error}
@@ -181,10 +174,6 @@ export default function PublicRequest() {
                     {s.phone && <p>โทร: {s.phone}</p>}
                   </section>
                 ))}
-                <p className="hint">
-                  Messenger สามารถปรับลำดับจุดได้ · Phase
-                  นี้ยังไม่แนบรูปหรือไฟล์
-                </p>
                 {uncertain && (
                   <p className="auth-message">
                     ข้อมูลถูกล็อกชั่วคราวเพื่อป้องกันงานซ้ำ
@@ -196,11 +185,13 @@ export default function PublicRequest() {
                   disabled={busy}
                   onClick={() => void send()}
                 >
-                  {busy
-                    ? "กำลังส่งงาน…"
-                    : uncertain
-                      ? "ตรวจผลการส่งอีกครั้ง"
-                      : "ยืนยันส่งงาน"}
+                  {busy ? (
+                    <Loading label="กำลังส่งงาน…" />
+                  ) : uncertain ? (
+                    "ตรวจผลการส่งอีกครั้ง"
+                  ) : (
+                    "ยืนยันส่งงาน"
+                  )}
                 </button>
                 <button
                   className="secondary"
@@ -272,7 +263,6 @@ export default function PublicRequest() {
                       />
                     </label>
                   </div>
-                  <p className="hint">ใช้ติดต่อเมื่อมีปัญหาหรือต้องคืนเอกสาร</p>
                   <label className="field">
                     แผนก (ถ้ามี)
                     <input
@@ -315,7 +305,11 @@ export default function PublicRequest() {
                     disabled={loading}
                     onClick={reload}
                   >
-                    โหลดรายชื่อใหม่
+                    {loading ? (
+                      <Loading label="กำลังโหลด…" />
+                    ) : (
+                      "โหลดรายชื่อใหม่"
+                    )}
                   </button>
                 </section>
                 <div className="section-title">
@@ -428,10 +422,6 @@ export default function PublicRequest() {
                     />
                   </label>
                 </div>
-                <p className="hint">
-                  ส่งข้อมูลนี้ให้ผู้รับผิดชอบงานและผู้ดูแลระบบของบริษัท ·
-                  ยังไม่รองรับการแนบไฟล์ใน Phase นี้
-                </p>
                 <button
                   className="primary"
                   disabled={loading || !options.length}

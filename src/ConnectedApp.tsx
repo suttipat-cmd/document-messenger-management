@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import App from "./App";
+import Manager from "./Manager";
+import Loading from "./Loading";
 import PublicRequest from "./PublicRequest";
 import { supabase } from "./lib/supabase";
 import {
@@ -33,6 +35,8 @@ function Workspace() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [demo, setDemo] = useState(false);
   const [creating, setCreating] = useState(false);
   const [connection, setConnection] = useState("กำลังเชื่อมต่อ");
@@ -45,6 +49,7 @@ function Workspace() {
   const refresh = useCallback(async () => {
     if (!session) return;
     const n = ++request.current;
+    setRefreshing(true);
     try {
       const data = await loadWorkspace(session.user.id);
       if (n === request.current) {
@@ -54,6 +59,8 @@ function Workspace() {
     } catch (e) {
       if (n === request.current) setError(errorText(e));
       throw e;
+    } finally {
+      if (n === request.current) setRefreshing(false);
     }
   }, [session]);
   useEffect(() => {
@@ -84,7 +91,9 @@ function Workspace() {
   }, [invalidate]);
   useEffect(() => {
     if (!session || !supabase) return;
-    void refresh().catch(() => {});
+    void Promise.resolve()
+      .then(refresh)
+      .catch(() => {});
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => {
       clearTimeout(timer);
@@ -144,9 +153,14 @@ function Workspace() {
     }
   }
   const logout = async () => {
-    if (supabase) {
-      const { error } = await supabase.auth.signOut();
-      if (error) setError("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่");
+    setLoggingOut(true);
+    try {
+      if (supabase) {
+        const { error } = await supabase.auth.signOut();
+        if (error) setError("ออกจากระบบไม่สำเร็จ กรุณาลองใหม่");
+      }
+    } finally {
+      setLoggingOut(false);
     }
   };
   if (demo)
@@ -162,17 +176,18 @@ function Workspace() {
   if (!ready)
     return (
       <div className="auth-shell">
-        <h1>กำลังตรวจสอบการเข้าสู่ระบบ…</h1>
+        <Loading label="กำลังตรวจสอบการเข้าสู่ระบบ…" />
       </div>
     );
   if (!session) return <Auth onDemo={() => setDemo(true)} />;
   if (!snapshot)
     return (
       <div className="auth-shell">
-        <h1>กำลังโหลดพื้นที่ทำงาน</h1>
+        <Loading label="กำลังโหลดพื้นที่ทำงาน" />
         {error && <p role="alert">{error}</p>}
         <button
           className="primary"
+          disabled={refreshing}
           onClick={() => {
             void refresh().catch(() => {});
           }}
@@ -204,31 +219,63 @@ function Workspace() {
         </button>
       </div>
     );
-  return (
-    <>
-      {snapshot.profile.role === "admin" && (
-        <details className="admin-users">
-          <summary>จัดการบัญชีผู้ใช้ ({snapshot.profiles.length})</summary>
-          <p className="hint">
-            ผู้ใช้สร้างบัญชีและยืนยันอีเมลก่อน แล้ว Admin
-            จึงเปิดใช้งานและกำหนดบทบาท
-          </p>
-          {snapshot.profiles.map((p) => (
-            <ProfileEditor
-              key={p.id + String(p.active) + p.role + p.display_name}
-              profile={p}
+  if (snapshot.profile.role !== "messenger")
+    return (
+      <>
+        {error && (
+          <div className="connection-error" role="alert">
+            {error}
+          </div>
+        )}
+        {saving && (
+          <div className="save-indicator">
+            <Loading label="กำลังบันทึก…" />
+          </div>
+        )}
+        {creating ? (
+          <div className="compact-form">
+            <JobForm
+              messengers={snapshot.messengers}
               saving={saving}
-              onSave={async (profile) => {
+              onCancel={() => setCreating(false)}
+              onSave={async (input) => {
                 try {
-                  await mutate(() => setProfile(profile));
+                  await mutate(() => createJob(input));
+                  setCreating(false);
                 } catch {
-                  /* error banner */
+                  /* banner */
                 }
               }}
             />
-          ))}
-        </details>
-      )}
+          </div>
+        ) : (
+          <Manager
+            onCommand={(j, a, s, n) => mutate(() => command(j, a, s, n))}
+            snapshot={snapshot}
+            busy={saving || refreshing || loggingOut}
+            onCreate={() => setCreating(true)}
+            onRefresh={() => void refresh().catch(() => {})}
+            onLogout={() => void logout()}
+            users={snapshot.profiles.map((p) => (
+              <ProfileEditor
+                key={p.id + String(p.active) + p.role + p.display_name}
+                profile={p}
+                saving={saving}
+                onSave={async (profile) => {
+                  try {
+                    await mutate(() => setProfile(profile));
+                  } catch {
+                    /* banner */
+                  }
+                }}
+              />
+            ))}
+          />
+        )}
+      </>
+    );
+  return (
+    <>
       {error && (
         <div className="connection-error" role="alert">
           {error}
@@ -236,10 +283,28 @@ function Workspace() {
         </div>
       )}
       <div className="mode-strip">
-        <span>{saving ? "กำลังบันทึก…" : connection}</span>
+        <span>
+          {saving || refreshing || loggingOut ? (
+            <Loading
+              label={
+                saving
+                  ? "กำลังบันทึก…"
+                  : loggingOut
+                    ? "กำลังออกจากระบบ…"
+                    : "กำลังโหลด…"
+              }
+            />
+          ) : (
+            <span
+              className="connection-dot"
+              title={connection}
+              aria-label={connection}
+            />
+          )}
+        </span>
         <a href="#/request">ฟอร์มสร้างงาน</a>
         <button
-          disabled={saving}
+          disabled={saving || refreshing}
           onClick={() => void refresh().catch(() => {})}
         >
           รีเฟรช
@@ -287,7 +352,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
       <span className="brandmark">m↗</span>
       <span className="eyebrow">DOCUMENT MESSENGER</span>
       <h1>{signup ? "สร้างบัญชี" : "เข้าสู่ระบบ"}</h1>
-      <p>จัดการงานรับ–ส่งเอกสารของบริษัท</p>
+
       <a className="public-entry" href="#/request">
         สร้างงานโดยไม่ต้องเข้าสู่ระบบ →
       </a>
@@ -353,11 +418,13 @@ function Auth({ onDemo }: { onDemo: () => void }) {
           <p role="alert">ยังไม่ได้กำหนด Supabase URL และ Publishable Key</p>
         )}
         <button className="primary" disabled={busy || !supabase}>
-          {busy
-            ? "กำลังดำเนินการ…"
-            : signup
-              ? "สร้างบัญชีและยืนยันอีเมล"
-              : "เข้าสู่ระบบ"}
+          {busy ? (
+            <Loading label="กำลังดำเนินการ…" />
+          ) : signup ? (
+            "สร้างบัญชีและยืนยันอีเมล"
+          ) : (
+            "เข้าสู่ระบบ"
+          )}
         </button>
       </form>
       <button
@@ -374,9 +441,6 @@ function Auth({ onDemo }: { onDemo: () => void }) {
       <button className="back" onClick={onDemo}>
         ดูต้นแบบด้วยข้อมูลตัวอย่าง
       </button>
-      <p className="hint">
-        รูปหลักฐานยังไม่เปิดใช้ใน Phase นี้ งานจริงบันทึกใน Supabase
-      </p>
     </div>
   );
 }
@@ -406,9 +470,7 @@ function JobForm({
         ← กลับกองงาน
       </button>
       <h1>สร้างและมอบหมายงาน</h1>
-      <p className="hint">
-        ฟอร์มสำหรับ Admin / Super User · บุคคลทั่วไปใช้ลิงก์ฟอร์มสร้างงาน
-      </p>
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -551,7 +613,7 @@ function JobForm({
             + เพิ่มจุดรับ–ส่ง
           </button>
           <button className="primary" disabled={!messengers.length}>
-            {saving ? "กำลังบันทึก…" : "สร้างและมอบหมายงาน"}
+            {saving ? <Loading label="กำลังบันทึก…" /> : "สร้างและมอบหมายงาน"}
           </button>
         </fieldset>
       </form>
@@ -609,7 +671,9 @@ function ProfileEditor({
           />
           เปิดใช้งาน
         </label>
-        <button className="secondary">บันทึกบัญชี</button>
+        <button className="secondary">
+          {saving ? <Loading label="กำลังบันทึก…" /> : "บันทึก"}
+        </button>
       </fieldset>
     </form>
   );

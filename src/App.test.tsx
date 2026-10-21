@@ -60,7 +60,7 @@ describe("Messenger Phase 1", () => {
     );
     expect(
       screen
-        .getByRole("button", { name: /แนบรูปหลักฐาน · Phase ถัดไป/ })
+        .getByRole("button", { name: /แนบรูปหลักฐาน/ })
         .matches(":disabled"),
     ).toBe(true);
     await u.click(screen.getByRole("button", { name: "เก็บไว้กลับมาทำใหม่" }));

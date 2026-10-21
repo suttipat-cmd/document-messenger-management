@@ -15,13 +15,18 @@ export type Snapshot = {
   profiles: Profile[];
 };
 export type Action =
-  "accept" | "complete_stop" | "retry_stop" | "start_return" | "confirm_return";
+  | "accept"
+  | "complete_stop"
+  | "retry_stop"
+  | "start_return"
+  | "confirm_return";
 type DbJob = {
   id: string;
   code: string;
   title: string;
   requester: string;
   requester_phone: string;
+  messenger_id: string;
   department: string;
   status: Job["status"];
   return_reason: string | null;
@@ -93,6 +98,8 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         title: j.title,
         person: j.requester,
         requesterPhone: j.requester_phone,
+        messengerName: profiles.find((p) => p.id === j.messenger_id)
+          ?.display_name,
         department: j.department,
         status: j.status,
         returnReason: j.return_reason || undefined,

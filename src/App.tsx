@@ -21,6 +21,7 @@ export type Job = {
   title: string;
   person: string;
   requesterPhone?: string;
+  messengerName?: string;
   department: string;
   status: "new" | "active" | "returning" | "done";
   stops: Stop[];
@@ -410,7 +411,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
       completedAt: next.every((s) => s.status === "done")
         ? new Date().toISOString()
         : undefined,
-      events: record(job, `สำเร็จ: ${stop.name} · Phase 1 ยังไม่มีรูปหลักฐาน`),
+      events: record(job, `สำเร็จ: ${stop.name}`),
     });
     setStopId(undefined);
     setNote("");
@@ -538,11 +539,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         </a>
         <span className="avatar">น</span>
       </header>
-      <div className="demo">
-        {remote
-          ? "ระบบจริง · รูปหลักฐานจะเปิดใน Phase ถัดไป"
-          : "ต้นแบบทดลอง · ข้อมูลชั่วคราว · ยังไม่บันทึกในระบบจริง"}
-      </div>
+      {!remote && <div className="demo">ข้อมูลตัวอย่าง</div>}
       <fieldset className="workspace-body" disabled={!!remote?.saving}>
         <main>
           {notice && (
@@ -610,10 +607,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                         status: "done",
                         returned: true,
                         completedAt: new Date().toISOString(),
-                        events: record(
-                          job,
-                          "คืนเอกสารให้ผู้มอบหมายสำเร็จ · Phase 1 ยังไม่มีรูปหลักฐาน",
-                        ),
+                        events: record(job, "คืนเอกสารให้ผู้มอบหมายสำเร็จ"),
                       });
                       setNotice("ยืนยันคืนเอกสารแล้ว งานเสร็จสิ้น");
                     }}
@@ -642,7 +636,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                           {(job.returnPhoto || job.returned) &&
                           stop.status !== "done"
                             ? "จุดนี้ยังไม่สำเร็จ เอกสารถูกคืนให้ผู้มอบหมายแล้ว"
-                            : "ดำเนินการแล้ว · Phase นี้ยังไม่มีรูปหลักฐาน"}
+                            : "ดำเนินการแล้ว"}
                         </p>
                       )}
                       {stop.note && <p>{stop.note}</p>}
@@ -993,19 +987,11 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     ? `${remote.profile.display_name} · ${{ admin: "Admin", super_user: "Super User", messenger: "Messenger" }[remote.profile.role]}`
                     : "คุณนัท · Messenger"}
                 </h2>
-                <p>
-                  {remote
-                    ? "บัญชี Supabase Auth ที่เปิดใช้งานแล้ว"
-                    : "บัญชีตัวอย่างสำหรับทดลองขั้นตอนทำงาน"}
-                </p>
-                <span className="pill">
-                  {remote ? "ระบบจริง" : "โหมดทดลอง"}
-                </span>
               </section>
               {remote ? (
                 <section className="panel">
                   <h2>การเข้าสู่ระบบ</h2>
-                  <p>สิทธิ์ของคุณดูแลโดย Admin ของบริษัท</p>
+
                   <button
                     className="secondary"
                     onClick={() => void remote.onLogout()}
@@ -1040,9 +1026,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       รีเซ็ตข้อมูลตัวอย่าง
                     </button>
                   </section>
-                  <p className="hint">
-                    ข้อมูลทดลองเท่านั้น · รูปหลักฐานจะเปิดใช้ใน Phase ถัดไป
-                  </p>
+                  <p className="hint">ข้อมูลตัวอย่าง</p>
                 </>
               )}
             </>
@@ -1070,8 +1054,7 @@ function Photo() {
   return (
     <div className="photo-box">
       <button className="camera" disabled>
-        <span aria-hidden="true">◎</span>แนบรูปหลักฐาน · Phase ถัดไป
-        <small>Phase นี้ยืนยันงานได้โดยไม่ต้องแนบรูป</small>
+        <span aria-hidden="true">◎</span>แนบรูปหลักฐาน
       </button>
     </div>
   );

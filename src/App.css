@@ -1157,3 +1157,648 @@ main {
   color: #28664d;
   overflow-wrap: anywhere;
 }
+/* Shared asynchronous feedback */
+.loading-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+.save-indicator {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #173e36;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 8px;
+}
+.connection-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #448679;
+}
+/* Desktop management workspace */
+.management-shell {
+  display: flex;
+  min-height: 100dvh;
+  font-size: 13px;
+  background: #f5f7f8;
+  color: #253b44;
+}
+.management-sidebar {
+  width: 216px;
+  flex-shrink: 0;
+  background: #fff;
+  border-right: 1px solid #e2e8eb;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 14px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+.management-brand {
+  text-decoration: none;
+  font-size: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 0 12px 28px;
+  color: #30685c;
+}
+.management-brand b {
+  font-size: 16px;
+}
+.management-sidebar nav {
+  display: grid;
+  gap: 5px;
+}
+.management-sidebar nav button,
+.management-sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  text-align: left;
+  background: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  min-height: 38px;
+  font-size: 13px;
+}
+.management-sidebar nav .selected {
+  background: #eaf3ef;
+  color: #286452;
+  font-weight: 600;
+}
+.management-sidebar nav span {
+  margin-left: auto;
+}
+.management-account {
+  margin-top: auto;
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+}
+.management-account small {
+  color: #87949b;
+}
+.management-account button {
+  background: none;
+  text-align: left;
+  padding: 12px 0 0;
+  color: #78858b;
+}
+.management-main {
+  flex: 1;
+  min-width: 0;
+  padding: 28px 32px;
+  max-width: 1600px;
+}
+.management-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.management-topbar h1 {
+  font-size: 23px;
+  margin: 2px 0;
+}
+.management-topbar .eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.7px;
+  color: #89979d;
+}
+.management-actions {
+  display: flex;
+  gap: 8px;
+}
+.management-shell .primary,
+.management-shell .secondary,
+.compact-form .primary,
+.compact-form .secondary {
+  min-height: 36px;
+  width: auto;
+  margin: 0;
+  padding: 7px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.management-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.management-stats button {
+  background: white;
+  border: 1px solid #e2e8eb;
+  border-radius: 8px;
+  padding: 14px 18px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.management-stats button.selected {
+  border-color: #448679;
+  background: #f0f7f3;
+}
+.management-stats span {
+  color: #74848c;
+}
+.management-stats strong {
+  font-size: 24px;
+  font-weight: 600;
+}
+.management-list {
+  background: #fff;
+  border: 1px solid #e2e8eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.management-toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  align-items: center;
+  border-bottom: 1px solid #e8edef;
+}
+.management-toolbar input {
+  width: 320px;
+  max-width: 100%;
+}
+.management-shell input,
+.management-shell select,
+.compact-form input,
+.compact-form select,
+.compact-form textarea {
+  border: 1px solid #dce4e7;
+  border-radius: 6px;
+  background: white;
+  font: inherit;
+  min-height: 36px;
+  padding: 7px 10px;
+  min-width: 0;
+}
+.management-toolbar span {
+  margin-left: auto;
+  color: #89969d;
+  white-space: nowrap;
+}
+.management-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(100px, 1fr) minmax(
+      90px,
+      1fr
+    ) 130px 100px;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  padding: 14px 18px;
+  background: white;
+  border-bottom: 1px solid #edf0f2;
+  align-items: center;
+  font-size: 13px;
+}
+.management-row:hover,
+.management-row.selected {
+  background: #f6faf8;
+}
+.management-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.management-row small,
+.management-row b {
+  display: block;
+}
+.management-row b {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 3px;
+}
+.management-row small {
+  font-size: 11px;
+  color: #83939a;
+}
+.management-row.table-heading {
+  background: #f9fafb;
+  color: #89979d;
+  font-size: 11px;
+  padding-block: 10px;
+}
+.management-row progress {
+  display: block;
+  width: 70px;
+  height: 4px;
+  margin-top: 6px;
+  accent-color: #488575;
+}
+.status-tag {
+  font-style: normal;
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  background: #f0f2f4;
+  color: #687984;
+}
+.status-tag.active {
+  background: #edf4ff;
+  color: #4078ba;
+}
+.status-tag.returning {
+  background: #fff3df;
+  color: #a77a31;
+}
+.status-tag.done {
+  background: #eaf5ee;
+  color: #3c7e58;
+}
+.management-empty {
+  padding: 60px;
+  text-align: center;
+  color: #8b999f;
+}
+.management-detail {
+  width: 340px;
+  flex-shrink: 0;
+  background: #fff;
+  border-left: 1px solid #e2e8eb;
+  padding: 24px;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+}
+.management-detail header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.management-detail header button {
+  font-size: 24px;
+  background: none;
+  width: 36px;
+  height: 36px;
+}
+.management-detail h2 {
+  font-size: 18px;
+  margin: 12px 0;
+}
+.management-detail dl {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 8px;
+  font-size: 12px;
+  margin: 24px 0;
+}
+.management-detail dt {
+  color: #8a989e;
+}
+.management-detail dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.management-detail h3 {
+  font-size: 13px;
+  margin: 18px 0 10px;
+}
+.management-stop {
+  padding: 12px 0;
+  border-bottom: 1px solid #edf0f2;
+}
+.management-stop b {
+  display: block;
+  margin: 4px 0;
+}
+.management-stop small,
+.management-timeline small {
+  color: #8a989e;
+  font-size: 11px;
+}
+.management-stop p,
+.management-timeline p {
+  font-size: 12px;
+  color: #687c85;
+}
+.management-timeline {
+  padding-left: 16px;
+}
+.management-timeline li {
+  padding: 6px 0;
+}
+.management-users .profile-editor {
+  background: white;
+  border: 1px solid #e2e8eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  padding: 12px;
+}
+.management-users .profile-editor fieldset {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 130px 110px 75px;
+  align-items: center;
+  gap: 16px;
+}
+.management-users .field {
+  margin: 0;
+  gap: 3px;
+  font-size: 11px;
+}
+.management-users .code {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.management-users .active-check {
+  font-size: 12px;
+}
+.compact-form {
+  max-width: 1000px;
+  margin: auto;
+  padding: 24px;
+}
+.compact-form .manager-form {
+  max-width: none;
+  padding: 0;
+}
+.compact-form h1 {
+  font-size: 24px;
+}
+.compact-form fieldset {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.compact-form .field {
+  margin: 0;
+  font-size: 12px;
+  gap: 5px;
+}
+.compact-form .panel {
+  grid-column: 1/-1;
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0;
+  border-radius: 8px;
+}
+.compact-form .panel .row {
+  grid-column: 1/-1;
+}
+.compact-form .panel h2 {
+  font-size: 15px;
+}
+.auth-shell {
+  padding: 28px;
+  gap: 14px;
+  max-width: 420px;
+}
+.auth-shell h1 {
+  font-size: 25px;
+}
+.auth-shell .field {
+  margin: 10px 0;
+}
+.auth-shell .primary,
+.auth-shell .secondary {
+  min-height: 42px;
+  border-radius: 7px;
+}
+.public-header {
+  padding: 12px 24px;
+}
+.public-main {
+  max-width: 980px;
+  padding: 24px;
+  margin: auto;
+}
+.public-main h1 {
+  font-size: 25px;
+  margin: 4px 0 18px;
+}
+.public-main .panel {
+  padding: 20px;
+  border-radius: 9px;
+  margin: 12px 0;
+}
+.public-main .field {
+  margin: 0;
+  gap: 6px;
+  font-size: 12px;
+}
+.public-fields {
+  gap: 16px;
+}
+.public-main input,
+.public-main select,
+.public-main textarea {
+  border-radius: 6px;
+}
+.public-main .primary,
+.public-main .secondary {
+  border-radius: 6px;
+}
+.public-main h2 {
+  font-size: 16px;
+}
+.public-main .eyebrow {
+  font-size: 10px;
+}
+.public-main .review-data {
+  font-size: 13px;
+}
+.public-main .receipt h1 {
+  font-size: 27px;
+}
+@media (min-width: 800px) {
+  .public-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+  .public-main input,
+  .public-main select {
+    min-height: 40px;
+    padding: 8px 10px;
+  }
+  .public-main .field textarea {
+    min-height: 70px;
+  }
+  .public-main .primary {
+    min-height: 40px;
+    width: auto;
+    padding: 8px 24px;
+  }
+  .public-main .panel {
+    margin: 12px 0;
+  }
+  .public-main > .panel {
+    margin: 12px 0;
+  }
+}
+@media (max-width: 1200px) {
+  .management-detail {
+    position: fixed;
+    right: 0;
+    z-index: 20;
+    box-shadow: -10px 0 40px #263d4420;
+  }
+  .management-row {
+    grid-template-columns: minmax(140px, 2fr) 1fr 1fr 110px 80px;
+    gap: 10px;
+    padding: 12px;
+  }
+  .management-main {
+    padding: 24px;
+  }
+  .management-users .profile-editor fieldset {
+    grid-template-columns: 1fr 1fr;
+  }
+  .management-users .code {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 800px) {
+  .management-shell {
+    display: block;
+  }
+  .management-sidebar {
+    width: auto;
+    height: auto;
+    position: static;
+    padding: 12px;
+    border-right: 0;
+    border-bottom: 1px solid #e2e8eb;
+  }
+  .management-brand {
+    padding: 0 0 10px;
+  }
+  .management-sidebar nav {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .management-account {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0 0;
+  }
+  .management-account button {
+    margin-left: auto;
+    padding: 0;
+    min-height: 40px;
+  }
+  .management-main {
+    padding: 16px;
+  }
+  .management-topbar {
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .management-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .management-stats button {
+    padding: 12px;
+  }
+  .management-toolbar {
+    flex-wrap: wrap;
+  }
+  .management-toolbar input {
+    width: 100%;
+  }
+  .management-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .management-row > span:first-child {
+    grid-column: 1/-1;
+  }
+  .management-row.table-heading {
+    display: none;
+  }
+  .management-detail {
+    width: min(100%, 380px);
+  }
+  .management-actions button {
+    min-height: 44px !important;
+  }
+  .compact-form {
+    padding: 16px;
+  }
+  .compact-form fieldset,
+  .compact-form .panel {
+    grid-template-columns: 1fr;
+  }
+  .compact-form .panel {
+    grid-column: auto;
+  }
+  .public-main {
+    padding: 16px;
+  }
+  .public-main h1 {
+    font-size: 23px;
+  }
+  .public-main .panel {
+    padding: 16px;
+  }
+  .public-fields {
+    gap: 14px;
+  }
+  .public-main input,
+  .public-main select {
+    min-height: 48px;
+  }
+  .public-main .primary,
+  .public-main .secondary {
+    min-height: 48px;
+  }
+}
+.management-command {
+  margin-top: 16px;
+}
+.management-command textarea {
+  font: inherit;
+  border: 1px solid #dce4e7;
+  border-radius: 6px;
+  padding: 8px;
+  min-height: 70px;
+  resize: vertical;
+}
+.management-detail > .primary {
+  margin-top: 16px;
+}
+.management-stop .management-actions {
+  margin-top: 10px;
+}
+.public-main .panel{display:grid;gap:12px}.public-main .panel .field{min-width:0}.public-main .panel h2{margin:0}.public-main .public-fields{gap:14px}
+@media(min-width:800px){.public-main form>.panel:first-child{grid-template-columns:1fr 1fr}.public-main form>.panel:first-child>h2,.public-main form>.panel:first-child>.public-fields,.public-main form>.panel:first-child>.field:first-of-type{grid-column:1/-1}}
