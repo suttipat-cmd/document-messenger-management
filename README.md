@@ -32,7 +32,7 @@ Demo mode is an explicit separate choice on the login screen. Demo changes are m
 - **Admin:** all visible jobs, management job creation, account names/roles/activation, operational actions. Removing the last active Admin is rejected.
 - **Super User:** all visible jobs, management job creation and operational actions; cannot manage account permissions.
 - **Messenger:** only assigned jobs; accept, freely reorder stops across active jobs, complete/retry stops, and confirm physical document return.
-- **Public requester:** public submission form and its restricted backend endpoint remain pending; anonymous visitors currently cannot read or mutate operational data.
+- **Public requester:** use https://suttipat-cmd.github.io/document-messenger-management/#/request without signing in. Choose an active Messenger, enter requester contact and 1–20 pickup/delivery stops, review and submit. The receipt contains only a job code; visitors cannot read or edit operational jobs. An Admin must activate at least one Messenger first.
 
 The approved initial Admin is `suttipat@forwardinsight.co.th`. A private, one-time bootstrap activates Admin only when Supabase Auth verifies that exact email. User-editable metadata never determines permissions. The bootstrap is consumed after use. All other signups start as inactive Messengers, regardless of supplied metadata.
 
@@ -70,8 +70,14 @@ RPCs: `messenger_command`, `messenger_reorder`, `messenger_create_job`, `messeng
 
 ## Architecture constraints
 
-GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and future Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Public form field design, the public submission endpoint, full desktop management, Drive remain subsequent work.
+GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Drive integration remains deferred; photo UI stays disabled.
 
 ## GitHub Pages
 
 The repository is public by owner approval. `.github/workflows/deploy.yml` tests, lints, builds and deploys on pushes to `main`, with manual dispatch available. Only the Supabase publishable configuration is embedded. GitHub Pages serves `dist` over HTTPS; the backend remains Supabase. The initial production deployment passed all jobs.
+
+### Public intake
+
+`public-job-request` is an intentionally anonymous Edge Function (`verify_jwt = false`). It validates input and calls service-role-only RPCs; anonymous clients have no direct table or RPC access. Only active Messenger IDs and display names are exposed. Server credentials remain in Supabase automatic environment variables. POST requests are limited to 32 KB, 1–20 stops, 30 requests per network bucket per 10 minutes, 60 globally per 10 minutes and 300 per Bangkok day. Network buckets are best-effort abuse controls, not identity verification. UUID request keys make retries idempotent, including after uncertain network errors. No requester data is persisted in browser storage.
+
+Apply `20261021182258_public_job_intake.sql`, then deploy `supabase/functions/public-job-request/index.ts`. The SQL was applied through Dashboard and is not yet in CLI migration history. `supabase/tests/public_intake.sql` checks grants, roster minimization, atomic creation, duplicate prevention, validation and throttling in a rolled-back transaction. All 11 UI tests, build and lint pass.

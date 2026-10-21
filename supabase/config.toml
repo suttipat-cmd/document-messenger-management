@@ -1,0 +1,3 @@
+# Public create-only endpoint. Operational RPCs and tables remain protected.
+[functions.public-job-request]
+verify_jwt = false

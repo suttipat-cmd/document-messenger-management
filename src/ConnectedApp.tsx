@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import App from "./App";
+import PublicRequest from "./PublicRequest";
 import { supabase } from "./lib/supabase";
 import {
   command,
@@ -13,6 +14,20 @@ import {
 import type { Snapshot, CreateJob } from "./lib/workspace";
 
 export default function ConnectedApp() {
+  const [publicRoute, setPublicRoute] = useState(() =>
+    window.location.hash.startsWith("#/request"),
+  );
+  useEffect(() => {
+    const change = () => {
+      setPublicRoute(window.location.hash.startsWith("#/request"));
+      window.scrollTo({ top: 0, behavior: "instant" });
+    };
+    window.addEventListener("hashchange", change);
+    return () => window.removeEventListener("hashchange", change);
+  }, []);
+  return publicRoute ? <PublicRequest /> : <Workspace />;
+}
+function Workspace() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(!supabase);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
@@ -222,6 +237,7 @@ export default function ConnectedApp() {
       )}
       <div className="mode-strip">
         <span>{saving ? "กำลังบันทึก…" : connection}</span>
+        <a href="#/request">ฟอร์มสร้างงาน</a>
         <button
           disabled={saving}
           onClick={() => void refresh().catch(() => {})}
@@ -272,6 +288,9 @@ function Auth({ onDemo }: { onDemo: () => void }) {
       <span className="eyebrow">DOCUMENT MESSENGER</span>
       <h1>{signup ? "สร้างบัญชี" : "เข้าสู่ระบบ"}</h1>
       <p>จัดการงานรับ–ส่งเอกสารของบริษัท</p>
+      <a className="public-entry" href="#/request">
+        สร้างงานโดยไม่ต้องเข้าสู่ระบบ →
+      </a>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -388,7 +407,7 @@ function JobForm({
       </button>
       <h1>สร้างและมอบหมายงาน</h1>
       <p className="hint">
-        ฟอร์มสำหรับ Admin / Super User · แบบฟอร์มสาธารณะจะออกแบบแยกภายหลัง
+        ฟอร์มสำหรับ Admin / Super User · บุคคลทั่วไปใช้ลิงก์ฟอร์มสร้างงาน
       </p>
       <form
         onSubmit={(e) => {

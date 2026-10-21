@@ -20,6 +20,7 @@ export type Job = {
   id: string;
   title: string;
   person: string;
+  requesterPhone?: string;
   department: string;
   status: "new" | "active" | "returning" | "done";
   stops: Stop[];
@@ -567,6 +568,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
               <p className="subtitle">
                 {stop ? stop.address : `${job.person} · ${job.department}`}
               </p>
+              {job.requesterPhone && (
+                <a
+                  className="action-link requester-phone"
+                  href={"tel:" + job.requesterPhone}
+                >
+                  โทรหาผู้มอบหมาย · {job.requesterPhone}
+                </a>
+              )}
               {job.status === "new" ? (
                 <section className="panel">
                   <h2>งานใหม่สำหรับคุณ</h2>

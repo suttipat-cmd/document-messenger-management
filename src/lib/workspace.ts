@@ -21,6 +21,7 @@ type DbJob = {
   code: string;
   title: string;
   requester: string;
+  requester_phone: string;
   department: string;
   status: Job["status"];
   return_reason: string | null;
@@ -91,6 +92,7 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         version: j.version,
         title: j.title,
         person: j.requester,
+        requesterPhone: j.requester_phone,
         department: j.department,
         status: j.status,
         returnReason: j.return_reason || undefined,
