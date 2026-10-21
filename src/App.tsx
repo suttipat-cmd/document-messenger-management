@@ -1,75 +1,1037 @@
-import { useRef, useState } from 'react'
-import type { ChangeEvent } from 'react'
-import './App.css'
+import { useRef, useState } from "react";
+import type { ChangeEvent } from "react";
+import "./App.css";
 
-type Stop = { id: string; name: string; address: string; kind: string; status: 'pending' | 'retry' | 'done'; photo?: string; note?: string }
-type Job = { id: string; title: string; person: string; department: string; status: 'new' | 'active' | 'returning' | 'done'; stops: Stop[]; returnPhoto?: string; returnReason?: string }
-type Tab = 'jobs' | 'stops' | 'history' | 'account'
+type Stop = {
+  id: string;
+  name: string;
+  address: string;
+  kind: string;
+  status: "pending" | "retry" | "done";
+  photo?: string;
+  note?: string;
+  contact?: string;
+  phone?: string;
+};
+type Job = {
+  id: string;
+  title: string;
+  person: string;
+  department: string;
+  status: "new" | "active" | "returning" | "done";
+  stops: Stop[];
+  returnPhoto?: string;
+  returnReason?: string;
+  events?: { text: string; time: string }[];
+  completedAt?: string;
+};
+type Tab = "jobs" | "stops" | "history" | "account";
 const initial: Job[] = [
-  { id: 'MSG-0261', title: 'รับ–ส่งเอกสารฝ่ายบัญชี', person: 'คุณเมย์', department: 'บัญชี', status: 'active', stops: [
-    { id: 's1', name: 'สำนักงานใหญ่', address: 'ชั้น 3 · แผนกบัญชี', kind: 'รับเอกสาร', status: 'done' },
-    { id: 's2', name: 'ธนาคารกสิกรไทย', address: 'สาขาสีลม · เคาน์เตอร์บริการ', kind: 'ส่งเอกสาร', status: 'pending' },
-    { id: 's3', name: 'อาคารสาทรธานี', address: 'ชั้น 12 · ติดต่อฝ่ายการเงิน', kind: 'ส่งเอกสาร', status: 'pending' },
-  ] },
-  { id: 'MSG-0262', title: 'นำส่งเอกสารสัญญา', person: 'คุณต้น', department: 'ธุรการ', status: 'new', stops: [
-    { id: 's4', name: 'สำนักงานพระราม 9', address: 'จุดรับเอกสาร · ล็อบบี้ชั้น 1', kind: 'รับเอกสาร', status: 'pending' },
-    { id: 's5', name: 'อาคารจีทาวเวอร์', address: 'ชั้น 18 · ติดต่อคุณแอน', kind: 'ส่งเอกสาร', status: 'pending' },
-  ] },
-]
-const labels = { new: 'รอรับงาน', active: 'กำลังดำเนินการ', returning: 'รอคืนเอกสาร', done: 'เสร็จสิ้น' }
-const icon = (name: string) => <span aria-hidden="true">{({ jobs: '▤', stops: '⌖', history: '◷', account: '○' } as Record<string, string>)[name]}</span>
+  {
+    id: "MSG-0261",
+    title: "รับ–ส่งเอกสารฝ่ายบัญชี",
+    person: "คุณเมย์",
+    department: "บัญชี",
+    status: "active",
+    stops: [
+      {
+        id: "s1",
+        name: "สำนักงานใหญ่",
+        address: "ชั้น 3 · แผนกบัญชี",
+        kind: "รับเอกสาร",
+        status: "done",
+      },
+      {
+        id: "s2",
+        name: "ธนาคารกสิกรไทย",
+        address: "สาขาสีลม · เคาน์เตอร์บริการ",
+        kind: "ส่งเอกสาร",
+        status: "pending",
+      },
+      {
+        id: "s3",
+        name: "อาคารสาทรธานี",
+        address: "ชั้น 12 · ติดต่อฝ่ายการเงิน",
+        kind: "ส่งเอกสาร",
+        status: "pending",
+      },
+    ],
+  },
+  {
+    id: "MSG-0262",
+    title: "นำส่งเอกสารสัญญา",
+    person: "คุณต้น",
+    department: "ธุรการ",
+    status: "new",
+    stops: [
+      {
+        id: "s4",
+        name: "สำนักงานพระราม 9",
+        address: "จุดรับเอกสาร · ล็อบบี้ชั้น 1",
+        kind: "รับเอกสาร",
+        status: "pending",
+      },
+      {
+        id: "s5",
+        name: "อาคารจีทาวเวอร์",
+        address: "ชั้น 18 · ติดต่อคุณแอน",
+        kind: "ส่งเอกสาร",
+        status: "pending",
+      },
+    ],
+  },
+  {
+    id: "MSG-0263",
+    title: "คืนเอกสารลงนาม",
+    person: "คุณฝน",
+    department: "ธุรการ",
+    status: "returning",
+    returnReason: "ผู้รับขอให้ส่งเอกสารกลับแก้ไข",
+    stops: [
+      {
+        id: "s6",
+        name: "สำนักงานคู่ค้า",
+        address: "ฝ่ายจัดซื้อ · จุดส่งเอกสาร",
+        kind: "ส่งเอกสาร",
+        status: "retry",
+        note: "เอกสารต้องแก้ไขก่อนลงนาม",
+      },
+    ],
+  },
+];
+const labels = {
+  new: "รอรับงาน",
+  active: "กำลังดำเนินการ",
+  returning: "รอคืนเอกสาร",
+  done: "เสร็จสิ้น",
+};
+const icon = (name: string) => (
+  <span aria-hidden="true">
+    {
+      (
+        { jobs: "▤", stops: "⌖", history: "◷", account: "○" } as Record<
+          string,
+          string
+        >
+      )[name]
+    }
+  </span>
+);
 export default function App() {
-  const [jobs, setJobs] = useState<Job[]>(initial)
-  const [tab, setTab] = useState<Tab>('jobs')
-  const [selected, setSelected] = useState<string>()
-  const [stopId, setStopId] = useState<string>()
-  const [filter, setFilter] = useState('all')
-  const [notice, setNotice] = useState('')
-  const [note, setNote] = useState('')
-  const [photo, setPhoto] = useState<string>()
-  const [busy, setBusy] = useState(false)
-  const input = useRef<HTMLInputElement>(null)
-  const job = jobs.find(j => j.id === selected)
-  const stop = job?.stops.find(s => s.id === stopId)
-  const active = jobs.filter(j => j.status !== 'done')
-  const update = (id: string, patch: Partial<Job>) => setJobs(old => old.map(j => j.id === id ? { ...j, ...patch } : j))
-  const open = (j: Job) => { setSelected(j.id); setStopId(undefined); setPhoto(undefined); setNote(''); setNotice('') }
-  const back = () => { if (stopId) setStopId(undefined); else setSelected(undefined); setPhoto(undefined); setNote(''); setNotice('') }
-  const navigate = (t: Tab) => { setTab(t); setSelected(undefined); setStopId(undefined); setNotice('') }
-  const move = (index: number, direction: number) => { if (!job) return; const next = [...job.stops]; [next[index], next[index + direction]] = [next[index + direction], next[index]]; update(job.id, { stops: next }) }
+  const [jobs, setJobs] = useState<Job[]>(initial);
+  const [tab, setTab] = useState<Tab>("jobs");
+  const [selected, setSelected] = useState<string>();
+  const [stopId, setStopId] = useState<string>();
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [stopFilter, setStopFilter] = useState("all");
+  const [arranging, setArranging] = useState(false);
+  const [routeOrder, setRouteOrder] = useState(
+    initial.flatMap((j) => j.stops.map((s) => s.id)),
+  );
+  const [lastJob, setLastJob] = useState<string>("MSG-0261");
+  const [historyFilter, setHistoryFilter] = useState("all");
+  const [clock, setClock] = useState(() => Date.now());
+  const [notice, setNotice] = useState("");
+  const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const photoRequest = useRef(0);
+  const job = jobs.find((j) => j.id === selected);
+  const stop = job?.stops.find((s) => s.id === stopId);
+  const active = jobs.filter((j) => j.status !== "done");
+  const update = (id: string, patch: Partial<Job>) =>
+    setJobs((old) => old.map((j) => (j.id === id ? { ...j, ...patch } : j)));
+  const open = (j: Job) => {
+    photoRequest.current += 1;
+    setBusy(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    setLastJob(j.id);
+    setArranging(false);
+    setSelected(j.id);
+    setStopId(undefined);
+    setPhoto(undefined);
+    setNote("");
+    setNotice("");
+  };
+  const back = () => {
+    photoRequest.current += 1;
+    setBusy(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    if (stopId) setStopId(undefined);
+    else setSelected(undefined);
+    setPhoto(undefined);
+    setNote("");
+    setNotice("");
+  };
+  const navigate = (t: Tab) => {
+    photoRequest.current += 1;
+    setBusy(false);
+    window.scrollTo({ top: 0, behavior: "instant" });
+    setClock(Date.now());
+    setTab(t);
+    setSelected(undefined);
+    setStopId(undefined);
+    setNotice("");
+    setPhoto(undefined);
+    setNote("");
+    setArranging(false);
+  };
+  const record = (j: Job, text: string) => [
+    ...(j.events || []),
+    { text, time: new Date().toISOString() },
+  ];
+  const accept = (j: Job) => {
+    update(j.id, { status: "active", events: record(j, "รับงานแล้ว") });
+    setNotice("รับงานแล้ว เลือกจุดที่ต้องการทำได้เลย");
+    setLastJob(j.id);
+  };
+  const move = (id: string, direction: number, visibleIds: string[]) => {
+    const index = visibleIds.indexOf(id);
+    const other = visibleIds[index + direction];
+    if (!other) return;
+    setRouteOrder((old) => {
+      const next = [...old];
+      const a = next.indexOf(id),
+        b = next.indexOf(other);
+      [next[a], next[b]] = [next[b], next[a]];
+      return next;
+    });
+  };
+  const sortStops = (stops: Stop[]) =>
+    [...stops].sort(
+      (a, b) => routeOrder.indexOf(a.id) - routeOrder.indexOf(b.id),
+    );
+  const matches = (j: Job) =>
+    [
+      j.id,
+      j.title,
+      j.person,
+      j.department,
+      ...j.stops.flatMap((s) => [s.name, s.address]),
+    ]
+      .join(" ")
+      .toLocaleLowerCase()
+      .includes(search.trim().toLocaleLowerCase());
+  const route = active
+    .filter((j) => j.status === "active")
+    .flatMap((j) =>
+      j.stops
+        .filter((s) => s.status !== "done")
+        .map((stop) => ({ job: j, stop })),
+    )
+    .sort(
+      (a, b) => routeOrder.indexOf(a.stop.id) - routeOrder.indexOf(b.stop.id),
+    );
+  const shownRoute = route.filter(
+    ({ job: j, stop: s }) =>
+      [j.id, j.title, j.person, s.name, s.address]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(search.trim().toLocaleLowerCase()) &&
+      (stopFilter === "all" ||
+        (stopFilter === "retry"
+          ? s.status === "retry"
+          : s.kind === stopFilter)),
+  );
+  const shownJobs = active.filter(
+    (j) => (filter === "all" || j.status === filter) && matches(j),
+  );
+  const resume =
+    jobs.find((j) => j.id === lastJob && j.status === "active") ||
+    active.find((j) => j.status === "active");
+  const searchBox = (
+    <label className="search">
+      <span aria-hidden="true">⌕</span>
+      <input
+        aria-label="ค้นหางานหรือสถานที่"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="ค้นหาเลขงาน สถานที่ หรือผู้มอบหมาย"
+      />
+      {search && (
+        <button aria-label="ล้างคำค้นหา" onClick={() => setSearch("")}>
+          ×
+        </button>
+      )}
+    </label>
+  );
+  const openStop = (j: Job, st: Stop) => {
+    open(j);
+    setStopId(st.id);
+    setNote(st.note || "");
+  };
+  const stopCard = (j: Job, st: Stop, index: number, visibleIds: string[]) => (
+    <article className={"route-card " + st.status} key={st.id}>
+      <div className="row">
+        <span className="code">
+          {j.id} · {st.kind}
+        </span>
+        <span
+          className={
+            "status " +
+            (st.status === "retry"
+              ? "returning"
+              : st.status === "done"
+                ? "done"
+                : "active")
+          }
+        >
+          {j.returnPhoto && st.status !== "done"
+            ? "คืนเอกสารแล้ว"
+            : st.status === "done"
+              ? "สำเร็จ"
+              : st.status === "retry"
+                ? "กลับมาทำใหม่"
+                : "รอดำเนินการ"}
+        </span>
+      </div>
+      <div className="stop-heading">
+        <span className="number">{st.status === "done" ? "✓" : index + 1}</span>
+        <div>
+          <h3>{st.name}</h3>
+          <p>{st.address}</p>
+        </div>
+      </div>
+      <p className="contact">
+        {st.contact ? `ผู้ติดต่อ: ${st.contact}` : `ผู้มอบหมาย: ${j.person}`}
+        {!st.phone && " · ยังไม่มีเบอร์โทร"}
+      </p>
+      {st.note && <p className="reason">{st.note}</p>}
+      {arranging && j.status === "active" ? (
+        <div className="arrange-actions">
+          <button
+            className="secondary"
+            aria-label={`เลื่อน ${st.name} ขึ้น`}
+            disabled={index === 0}
+            onClick={() => move(st.id, -1, visibleIds)}
+          >
+            ↑ ขึ้น
+          </button>
+          <button
+            className="secondary"
+            aria-label={`เลื่อน ${st.name} ลง`}
+            disabled={index === visibleIds.length - 1}
+            onClick={() => move(st.id, 1, visibleIds)}
+          >
+            ↓ ลง
+          </button>
+        </div>
+      ) : (
+        <div className="route-actions">
+          {st.phone ? (
+            <a className="action-link" href={"tel:" + st.phone}>
+              โทร
+            </a>
+          ) : (
+            <button disabled aria-label="ยังไม่มีเบอร์โทร">
+              โทร
+            </button>
+          )}
+          <a
+            className="action-link"
+            href={
+              "https://www.google.com/maps/search/?api=1&query=" +
+              encodeURIComponent(st.name + " " + st.address)
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            นำทาง ↗
+          </a>
+          <button
+            className="action-primary"
+            disabled={j.status === "new"}
+            onClick={() => openStop(j, st)}
+          >
+            {st.status === "done" || j.status === "done"
+              ? "ดูหลักฐาน"
+              : "ดำเนินการ"}
+          </button>
+        </div>
+      )}
+    </article>
+  );
   const readPhoto = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]; if (!file) return
-    if (!file.type.startsWith('image/')) { setNotice('กรุณาเลือกไฟล์รูปภาพ'); return }
-    if (file.size > 15 * 1024 * 1024) { setNotice('กรุณาเลือกรูปขนาดไม่เกิน 15 MB'); return }
-    setBusy(true); setNotice('')
-    const reader = new FileReader(); reader.onload = () => { setPhoto(String(reader.result)); setBusy(false) }; reader.onerror = () => { setNotice('เปิดรูปไม่สำเร็จ กรุณาลองใหม่'); setBusy(false) }; reader.readAsDataURL(file)
-  }
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setNotice("กรุณาเลือกไฟล์รูปภาพ");
+      return;
+    }
+    if (file.size > 15 * 1024 * 1024) {
+      setNotice("กรุณาเลือกรูปขนาดไม่เกิน 15 MB");
+      return;
+    }
+    setBusy(true);
+    setNotice("");
+    const request = ++photoRequest.current;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (request !== photoRequest.current) return;
+      setPhoto(String(reader.result));
+      setBusy(false);
+    };
+    reader.onerror = () => {
+      if (request !== photoRequest.current) return;
+      setNotice("เปิดรูปไม่สำเร็จ กรุณาลองใหม่");
+      setBusy(false);
+    };
+    reader.readAsDataURL(file);
+  };
   const completeStop = () => {
-    if (!job || !stop || !photo) return
-    const next = job.stops.map(s => s.id === stop.id ? { ...s, status: 'done' as const, photo, note } : s)
-    update(job.id, { stops: next, status: next.every(s => s.status === 'done') ? 'done' : 'active' }); setStopId(undefined); setPhoto(undefined); setNote(''); setNotice('บันทึกจุดดำเนินการแล้ว')
-  }
-  const retry = () => { if (!job || !stop) return; if (!note.trim()) { setNotice('ระบุเหตุผลสั้น ๆ เพื่อกลับมาทำต่อ'); return }; update(job.id, { stops: job.stops.map(s => s.id === stop.id ? { ...s, status: 'retry', note } : s) }); setStopId(undefined); setNote(''); setPhoto(undefined); setNotice('เก็บจุดนี้ไว้กลับมาทำใหม่แล้ว') }
-  const returnJob = () => { if (!job) return; if (!note.trim()) { setNotice('ระบุเหตุผลการคืนเอกสารก่อนดำเนินการ'); return }; update(job.id, { status: 'returning', returnReason: note.trim() }); setStopId(undefined); setPhoto(undefined); setNotice('งานยังไม่จบจนกว่าจะคืนเอกสารพร้อมรูปหลักฐาน') }
-  const card = (j: Job) => <button className="task" key={j.id} onClick={() => open(j)}><div className="row"><span className="code">{j.id}</span><span className={'status ' + j.status}>{labels[j.status]}</span></div><h3>{j.title}</h3><p>{j.person} · {j.department}</p><div className="progress"><i style={{ width: `${j.stops.filter(s => s.status === 'done').length / j.stops.length * 100}%` }} /></div><div className="row foot"><span>{j.stops.filter(s => s.status === 'done').length}/{j.stops.length} จุดสำเร็จ</span><b>ดูงาน <span aria-hidden="true">↗</span></b></div></button>
-  return <div className="app"><header className="top"><a href="#" onClick={e => { e.preventDefault(); navigate('jobs') }} className="brand"><span className="brandmark">m<span>↗</span></span><span>messenger<small>DOCUMENT WORKSPACE</small></span></a><span className="avatar">น</span></header>
-    <div className="demo">ต้นแบบทดลอง · ข้อมูลตัวอย่าง · รูปเก็บในหน่วยความจำชั่วคราว</div>
-    <main>
-      {notice && <div role="status" className="notice">{notice}<button aria-label="ปิดข้อความ" onClick={() => setNotice('')}>×</button></div>}
-      {job ? <>
-        <button className="back" onClick={back}>← {stop ? 'กลับรายละเอียดงาน' : 'กลับรายการ'}</button>
-        <div className="row"><span className="eyebrow">{job.id}</span><span className={'status ' + job.status}>{labels[job.status]}</span></div>
-        <h1>{stop ? stop.name : job.title}</h1><p className="subtitle">{stop ? stop.address : `${job.person} · ${job.department}`}</p>
-        {job.status === 'new' ? <section className="panel"><h2>งานใหม่สำหรับคุณ</h2><p>มี {job.stops.length} จุดรับ–ส่ง เมื่อรับงานแล้วคุณสามารถเลือกจุดและจัดลำดับได้เอง</p><button className="primary" onClick={() => { update(job.id, { status: 'active' }); setNotice('รับงานแล้ว เลือกจุดที่ต้องการทำได้เลย') }}>รับงานนี้ →</button></section> : null}
-        {job.status === 'returning' ? <section className="panel"><div className="largeicon">↩</div><h2>นำเอกสารคืนผู้มอบหมาย</h2><p>คืนให้ {job.person} · {job.department} แล้วถ่ายรูปเพื่อยืนยันการส่งคืน</p><p>เหตุผล: {job.returnReason}</p><Photo photo={photo} busy={busy} onChoose={() => input.current?.click()} /><button className="primary" disabled={!photo || busy} onClick={() => { update(job.id, { status: 'done', returnPhoto: photo }); setPhoto(undefined); setNotice('ยืนยันคืนเอกสารแล้ว งานเสร็จสิ้น') }}>ยืนยันคืนเอกสารและปิดงาน</button></section> : stop ? <section className="panel"><span className="pill">{stop.kind}</span><h2>{stop.status === 'done' ? 'ดำเนินการเรียบร้อย' : 'หลักฐานการดำเนินการ'}</h2>{stop.status === 'done' ? <>{stop.photo ? <img className="preview" src={stop.photo} alt="รูปหลักฐานของจุดนี้" /> : <p>จุดตัวอย่างที่ดำเนินการแล้ว</p>}{stop.note && <p>{stop.note}</p>}</> : <><Photo photo={photo} busy={busy} onChoose={() => input.current?.click()} /><label className="field">หมายเหตุ / เหตุผลที่ทำไม่สำเร็จ<textarea value={note} onChange={e => setNote(e.target.value)} placeholder="กรอกเมื่อมีข้อมูลเพิ่มเติม" rows={3} /></label><button className="primary" disabled={!photo || busy} onClick={completeStop}>ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓</button><button className="secondary" onClick={retry}>เก็บไว้กลับมาทำใหม่</button><button className="text-danger" onClick={returnJob}>นำเอกสารกลับคืนผู้มอบหมาย</button></>}</section> : <>
-          <section className="summary"><div><small>ความคืบหน้า</small><strong>{job.stops.filter(s => s.status === 'done').length}<span> / {job.stops.length} จุด</span></strong></div><div className="ring">{Math.round(job.stops.filter(s => s.status === 'done').length / job.stops.length * 100)}%</div></section>
-          <div className="section-title"><h2>จุดรับ–ส่ง</h2><span>เลือกทำจุดไหนก่อนก็ได้</span></div><p className="hint">ใช้ปุ่ม ↑ ↓ เพื่อสลับลำดับจุด</p>
-          <div className="stop-list">{job.stops.map((s, i) => <article className={'stop ' + s.status} key={s.id}><span className="number">{s.status === 'done' ? '✓' : i + 1}</span><button className="stop-main" disabled={job.status === 'new'} onClick={() => { setStopId(s.id); setPhoto(undefined); setNote(s.note || ''); setNotice('') }}><small>{s.kind} · {s.status === 'done' ? 'สำเร็จ' : s.status === 'retry' ? 'กลับมาทำใหม่' : 'รอดำเนินการ'}</small><h3>{s.name}</h3><p>{s.address}</p>{s.note && <p className="reason">{s.note}</p>}</button>{job.status === 'active' && <div className="reorder"><button aria-label={`เลื่อน ${s.name} ขึ้น`} disabled={i === 0} onClick={() => move(i, -1)}>↑</button><button aria-label={`เลื่อน ${s.name} ลง`} disabled={i === job.stops.length - 1} onClick={() => move(i, 1)}>↓</button></div>}</article>)}</div>
-          {job.status === 'done' && <section className="panel"><h2>✓ งานเสร็จสิ้น</h2><p>{job.returnPhoto ? 'คืนเอกสารให้ผู้มอบหมายเรียบร้อยแล้ว' : 'ดำเนินการครบทุกจุดแล้ว'}</p>{job.returnPhoto && <img className="preview" src={job.returnPhoto} alt="หลักฐานคืนเอกสาร" />}</section>}
-        </>}
-      </> : tab === 'jobs' ? <><div className="greeting">พร้อมออกเดินทางแล้วหรือยัง</div><h1>งานของฉัน<span className="wave"> ↗</span></h1><p className="subtitle">รับงาน เลือกจุด แล้วไปต่อได้เลย</p><section className="hero"><div><span>งานที่ต้องดูแล</span><strong>{active.length}<small>งาน</small></strong><p>{active.reduce((n, j) => n + j.stops.filter(s => s.status !== 'done').length, 0)} จุดรอดำเนินการ</p></div><div className="route-art" aria-hidden="true"><span>⌖</span><i /><span>✓</span></div></section><div className="filters" aria-label="กรองสถานะ">{[['all', 'ทั้งหมด'], ['active', 'กำลังทำ'], ['new', 'งานใหม่']].map(([v, label]) => <button key={v} aria-pressed={filter === v} className={filter === v ? 'selected' : ''} onClick={() => setFilter(v)}>{label} <small>{active.filter(j => v === 'all' || j.status === v).length}</small></button>)}</div><div className="section-title"><h2>รายการงาน</h2><span>อัปเดตในรอบทดลองนี้</span></div><div className="tasks">{active.filter(j => filter === 'all' || j.status === filter).map(card)}</div>{!active.filter(j => filter === 'all' || j.status === filter).length && <Empty text="ไม่มีงานในรายการนี้" />}</> : tab === 'stops' ? <><span className="eyebrow">YOUR ROUTE</span><h1>จุดรับ–ส่ง</h1><p className="subtitle">จุดที่ยังต้องดำเนินการจากงานที่รับแล้ว</p>{active.filter(j => j.status === 'active').flatMap(j => j.stops.filter(s => s.status !== 'done').map(s => <button className="task" key={s.id} onClick={() => { open(j); setStopId(s.id); setNote(s.note || '') }}><div className="row"><span className="code">{j.id}</span><span className="pill">{s.kind}</span></div><h3>{s.name}</h3><p>{s.address}</p><b>{s.status === 'retry' ? 'กลับมาทำใหม่' : 'ดำเนินการ →'}</b></button>))}{!active.some(j => j.status === 'active' && j.stops.some(s => s.status !== 'done')) && <Empty text="ไม่มีจุดรอดำเนินการ" />}</> : tab === 'history' ? <><span className="eyebrow">COMPLETED</span><h1>ประวัติงาน</h1><p className="subtitle">งานที่ทำครบหรือคืนเอกสารเรียบร้อยแล้ว</p>{jobs.filter(j => j.status === 'done').map(card)}{!jobs.some(j => j.status === 'done') && <Empty text="ยังไม่มีงานที่เสร็จสิ้น ลองทำงานตัวอย่างให้ครบ" />}</> : <><span className="eyebrow">YOUR WORKSPACE</span><h1>บัญชีของฉัน</h1><section className="panel"><span className="avatar big">น</span><h2>คุณนัท · Messenger</h2><p>บัญชีตัวอย่างสำหรับทดลองขั้นตอนทำงาน</p><span className="pill">โหมดทดลอง</span></section><section className="panel"><h2>เริ่มทดลองใหม่</h2><p>ล้างความคืบหน้าและรูปชั่วคราว แล้วกลับไปใช้ข้อมูลตัวอย่างเริ่มต้น</p><button className="secondary" onClick={() => { setJobs(initial); navigate('jobs'); setNotice('เริ่มต้นข้อมูลตัวอย่างใหม่แล้ว') }}>รีเซ็ตข้อมูลตัวอย่าง</button></section><p className="hint">ยังไม่เชื่อม Supabase Auth หรือ Google Drive รูปจะหายเมื่อรีเฟรชหน้า</p></>}
-      <input ref={input} className="file-input" type="file" accept="image/*" capture="environment" aria-label="ถ่ายหรือเลือกรูปหลักฐาน" onChange={e => { void readPhoto(e); e.target.value = '' }} />
-    </main><nav className="bottom" aria-label="เมนูหลัก">{(['jobs', 'stops', 'history', 'account'] as Tab[]).map((t, i) => <button key={t} className={tab === t ? 'current' : ''} aria-current={tab === t ? 'page' : undefined} onClick={() => navigate(t)}>{icon(t)}<span>{['งานของฉัน', 'จุดรับ–ส่ง', 'ประวัติ', 'บัญชี'][i]}</span></button>)}</nav></div>
+    if (!job || !stop || !photo || job.status !== "active") return;
+    const next = job.stops.map((s) =>
+      s.id === stop.id ? { ...s, status: "done" as const, photo, note } : s,
+    );
+    update(job.id, {
+      stops: next,
+      status: next.every((s) => s.status === "done") ? "done" : "active",
+      completedAt: next.every((s) => s.status === "done")
+        ? new Date().toISOString()
+        : undefined,
+      events: record(job, `สำเร็จ: ${stop.name} · มีรูปหลักฐาน`),
+    });
+    setStopId(undefined);
+    setPhoto(undefined);
+    setNote("");
+    setNotice("บันทึกจุดดำเนินการแล้ว");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+  const retry = () => {
+    if (!job || !stop || job.status !== "active") return;
+    if (!note.trim()) {
+      setNotice("ระบุเหตุผลสั้น ๆ เพื่อกลับมาทำต่อ");
+      return;
+    }
+    update(job.id, {
+      stops: job.stops.map((s) =>
+        s.id === stop.id ? { ...s, status: "retry", note } : s,
+      ),
+      events: record(job, `กลับมาทำใหม่: ${stop.name} · ${note.trim()}`),
+    });
+    setStopId(undefined);
+    setNote("");
+    setPhoto(undefined);
+    setNotice("เก็บจุดนี้ไว้กลับมาทำใหม่แล้ว");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+  const returnJob = () => {
+    if (!job || job.status !== "active") return;
+    if (!note.trim()) {
+      setNotice("ระบุเหตุผลการคืนเอกสารก่อนดำเนินการ");
+      return;
+    }
+    update(job.id, {
+      status: "returning",
+      returnReason: note.trim(),
+      events: record(job, `เริ่มคืนเอกสาร · ${note.trim()}`),
+    });
+    setStopId(undefined);
+    setPhoto(undefined);
+    setNotice("งานยังไม่จบจนกว่าจะคืนเอกสารพร้อมรูปหลักฐาน");
+  };
+  const card = (j: Job) => (
+    <article className="task" key={j.id}>
+      <div className="row">
+        <span className="code">{j.id}</span>
+        <span className={"status " + j.status}>
+          {j.returnPhoto ? "คืนเอกสารแล้ว" : labels[j.status]}
+        </span>
+      </div>
+      <h3>{j.title}</h3>
+      <p>
+        {j.person} · {j.department}
+      </p>
+      <div className="progress">
+        <i
+          style={{
+            width: `${(j.stops.filter((s) => s.status === "done").length / j.stops.length) * 100}%`,
+          }}
+        />
+      </div>
+      <div className="row foot">
+        <span>
+          สำเร็จ {j.stops.filter((s) => s.status === "done").length}/
+          {j.stops.length} จุด
+          {j.stops.some((s) => s.status === "retry")
+            ? ` · ทำใหม่ ${j.stops.filter((s) => s.status === "retry").length}`
+            : ""}
+        </span>
+      </div>
+      {j.status === "returning" && (
+        <p className="return-warning">
+          ↩ ต้องนำเอกสารจริงกลับคืน · {j.returnReason}
+        </p>
+      )}
+      <div className="card-actions">
+        <button className="secondary" onClick={() => open(j)}>
+          ดูรายละเอียด
+        </button>
+        {j.status === "new" ? (
+          <button className="primary" onClick={() => accept(j)}>
+            รับงาน
+          </button>
+        ) : j.status === "returning" ? (
+          <button className="primary" onClick={() => open(j)}>
+            ยืนยันคืนเอกสาร
+          </button>
+        ) : j.status === "active" ? (
+          <button
+            className="primary"
+            onClick={() => {
+              const next = sortStops(j.stops).find(
+                (st) => st.status !== "done",
+              );
+              if (next) openStop(j, next);
+              else open(j);
+            }}
+          >
+            ทำต่อ →
+          </button>
+        ) : null}
+      </div>
+    </article>
+  );
+  return (
+    <div className="app">
+      <header className="top">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate("jobs");
+          }}
+          className="brand"
+        >
+          <span className="brandmark">
+            m<span>↗</span>
+          </span>
+          <span>
+            messenger<small>DOCUMENT WORKSPACE</small>
+          </span>
+        </a>
+        <span className="avatar">น</span>
+      </header>
+      <div className="demo">
+        ต้นแบบทดลอง · ข้อมูลตัวอย่าง · รูปเก็บในหน่วยความจำชั่วคราว
+      </div>
+      <main>
+        {notice && (
+          <div role="status" className="notice">
+            {notice}
+            <button aria-label="ปิดข้อความ" onClick={() => setNotice("")}>
+              ×
+            </button>
+          </div>
+        )}
+        {job ? (
+          <>
+            <button className="back" onClick={back}>
+              ← {stop ? "กลับรายละเอียดงาน" : "กลับรายการ"}
+            </button>
+            <div className="row">
+              <span className="eyebrow">{job.id}</span>
+              <span className={"status " + job.status}>
+                {labels[job.status]}
+              </span>
+            </div>
+            <h1>{stop ? stop.name : job.title}</h1>
+            <p className="subtitle">
+              {stop ? stop.address : `${job.person} · ${job.department}`}
+            </p>
+            {job.status === "new" ? (
+              <section className="panel">
+                <h2>งานใหม่สำหรับคุณ</h2>
+                <p>
+                  มี {job.stops.length} จุดรับ–ส่ง
+                  เมื่อรับงานแล้วคุณสามารถเลือกจุดและจัดลำดับได้เอง
+                </p>
+                <button className="primary" onClick={() => accept(job)}>
+                  รับงานนี้ →
+                </button>
+              </section>
+            ) : null}
+            {job.status === "returning" ? (
+              <section className="panel">
+                <div className="largeicon">↩</div>
+                <h2>นำเอกสารคืนผู้มอบหมาย</h2>
+                <p>
+                  คืนให้ {job.person} · {job.department}{" "}
+                  แล้วถ่ายรูปเพื่อยืนยันการส่งคืน
+                </p>
+                <p>เหตุผล: {job.returnReason}</p>
+                <Photo
+                  photo={photo}
+                  busy={busy}
+                  onChoose={() => input.current?.click()}
+                />
+                <button
+                  className="primary"
+                  disabled={!photo || busy}
+                  onClick={() => {
+                    update(job.id, {
+                      status: "done",
+                      returnPhoto: photo,
+                      completedAt: new Date().toISOString(),
+                      events: record(
+                        job,
+                        "คืนเอกสารให้ผู้มอบหมายสำเร็จ · มีรูปหลักฐาน",
+                      ),
+                    });
+                    setPhoto(undefined);
+                    setNotice("ยืนยันคืนเอกสารแล้ว งานเสร็จสิ้น");
+                  }}
+                >
+                  ยืนยันคืนเอกสารและปิดงาน
+                </button>
+              </section>
+            ) : stop ? (
+              <section className="panel">
+                <span className="pill">{stop.kind}</span>
+                <h2>
+                  {stop.status === "done"
+                    ? "ดำเนินการเรียบร้อย"
+                    : "หลักฐานการดำเนินการ"}
+                </h2>
+                {stop.status === "done" || job.status === "done" ? (
+                  <>
+                    {stop.photo ? (
+                      <img
+                        className="preview"
+                        src={stop.photo}
+                        alt="รูปหลักฐานของจุดนี้"
+                      />
+                    ) : (
+                      <p>
+                        {job.returnPhoto && stop.status !== "done"
+                          ? "จุดนี้ยังไม่สำเร็จ เอกสารถูกคืนให้ผู้มอบหมายแล้ว"
+                          : "จุดตัวอย่างที่ดำเนินการแล้ว"}
+                      </p>
+                    )}
+                    {stop.note && <p>{stop.note}</p>}
+                  </>
+                ) : (
+                  <>
+                    <Photo
+                      photo={photo}
+                      busy={busy}
+                      onChoose={() => input.current?.click()}
+                    />
+                    <label className="field">
+                      หมายเหตุ / เหตุผลที่ทำไม่สำเร็จ
+                      <textarea
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        placeholder="กรอกเมื่อมีข้อมูลเพิ่มเติม"
+                        rows={3}
+                      />
+                    </label>
+                    <button
+                      className="primary"
+                      disabled={!photo || busy}
+                      onClick={completeStop}
+                    >
+                      ยืนยันสำเร็จพร้อมรูปหลักฐาน ✓
+                    </button>
+                    <button className="secondary" onClick={retry}>
+                      เก็บไว้กลับมาทำใหม่
+                    </button>
+                    <button className="text-danger" onClick={returnJob}>
+                      นำเอกสารกลับคืนผู้มอบหมาย
+                    </button>
+                  </>
+                )}
+              </section>
+            ) : (
+              <>
+                <section className="summary">
+                  <div>
+                    <small>ความคืบหน้า</small>
+                    <strong>
+                      {job.stops.filter((s) => s.status === "done").length}
+                      <span> / {job.stops.length} จุด</span>
+                    </strong>
+                  </div>
+                  <div className="ring">
+                    {Math.round(
+                      (job.stops.filter((s) => s.status === "done").length /
+                        job.stops.length) *
+                        100,
+                    )}
+                    %
+                  </div>
+                </section>
+                <div className="section-title">
+                  <h2>จุดรับ–ส่ง</h2>
+                  {job.status === "active" && (
+                    <button
+                      className="mode-button"
+                      aria-pressed={arranging}
+                      onClick={() => setArranging(!arranging)}
+                    >
+                      {arranging ? "✓ เสร็จแล้ว" : "⇅ จัดลำดับ"}
+                    </button>
+                  )}
+                </div>
+                <p className="hint">
+                  {arranging
+                    ? "ใช้ปุ่มขึ้น–ลงเพื่อเปลี่ยนลำดับ จุดอื่นจะคงลำดับเดิม"
+                    : "เลือกทำจุดไหนก่อนก็ได้ หรือเปิดจุดรับ–ส่งเพื่อดูข้ามงาน"}
+                </p>
+                <div className="stop-list">
+                  {sortStops(job.stops).map((st, i, list) =>
+                    stopCard(
+                      job,
+                      st,
+                      i,
+                      list.map((x) => x.id),
+                    ),
+                  )}
+                </div>
+                {job.status === "done" && (
+                  <section className="panel">
+                    <h2>✓ งานเสร็จสิ้น</h2>
+                    <p>
+                      {job.returnPhoto
+                        ? "คืนเอกสารให้ผู้มอบหมายเรียบร้อยแล้ว"
+                        : "ดำเนินการครบทุกจุดแล้ว"}
+                    </p>
+                    {job.returnPhoto && (
+                      <img
+                        className="preview"
+                        src={job.returnPhoto}
+                        alt="หลักฐานคืนเอกสาร"
+                      />
+                    )}
+                  </section>
+                )}
+              </>
+            )}
+            {!stop && (
+              <section className="panel">
+                <h2>ลำดับเหตุการณ์</h2>
+                {job.events?.length ? (
+                  <ol className="timeline">
+                    {job.events.map((event, i) => (
+                      <li key={i}>
+                        <span>{event.text}</span>
+                        <time dateTime={event.time}>
+                          {new Date(event.time).toLocaleString("th-TH", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>ข้อมูลเริ่มต้นตัวอย่าง · ยังไม่มีเหตุการณ์ในรอบทดลองนี้</p>
+                )}
+              </section>
+            )}
+          </>
+        ) : tab === "jobs" ? (
+          <>
+            <div className="greeting">พื้นที่ทำงานของคุณนัท</div>
+            <h1>งานของฉัน</h1>
+            <div className="stats" aria-label="สรุปงาน">
+              {(
+                [
+                  ["new", "งานใหม่"],
+                  ["active", "กำลังทำ"],
+                  ["returning", "รอคืน"],
+                  ["done", "สำเร็จ"],
+                ] as const
+              ).map(([status, title]) => (
+                <button
+                  key={status}
+                  className={"stat " + status}
+                  onClick={() => {
+                    setSearch("");
+                    if (status === "done") navigate("history");
+                    else setFilter(status);
+                  }}
+                >
+                  <span>{title}</span>
+                  <strong>
+                    {jobs.filter((j) => j.status === status).length}
+                  </strong>
+                </button>
+              ))}
+            </div>
+            {resume && (
+              <button
+                className="resume"
+                onClick={() => {
+                  const next = sortStops(resume.stops).find(
+                    (st) => st.status !== "done",
+                  );
+                  if (next) openStop(resume, next);
+                  else open(resume);
+                }}
+              >
+                <span>
+                  <small>ทำต่อจากงานล่าสุด · {resume.id}</small>
+                  <b>
+                    {sortStops(resume.stops).find((st) => st.status !== "done")
+                      ?.name || resume.title}
+                  </b>
+                </span>
+                <span aria-hidden="true">→</span>
+              </button>
+            )}
+            {searchBox}
+            <div className="filters four" aria-label="กรองสถานะ">
+              {[
+                ["all", "ทั้งหมด"],
+                ["new", "งานใหม่"],
+                ["active", "กำลังทำ"],
+                ["returning", "รอคืน"],
+              ].map(([v, label]) => (
+                <button
+                  key={v}
+                  aria-pressed={filter === v}
+                  className={filter === v ? "selected" : ""}
+                  onClick={() => setFilter(v)}
+                >
+                  {label}
+                  <small>
+                    {active.filter((j) => v === "all" || j.status === v).length}
+                  </small>
+                </button>
+              ))}
+            </div>
+            <div className="section-title">
+              <h2>รายการงาน</h2>
+              <span>{shownJobs.length} งาน</span>
+            </div>
+            <div className="tasks">{shownJobs.map(card)}</div>
+            {!shownJobs.length && (
+              <Empty
+                text={
+                  search
+                    ? "ไม่พบงานที่ตรงกับคำค้นหา ลองค้นหาด้วยเลขงานหรือสถานที่"
+                    : "ไม่มีงานในสถานะนี้"
+                }
+              />
+            )}
+          </>
+        ) : tab === "stops" ? (
+          <>
+            <span className="eyebrow">YOUR ROUTE</span>
+            <h1>จุดรับ–ส่ง</h1>
+            <p className="subtitle">เลือกจุดจากทุกงานที่รับแล้วได้อิสระ</p>
+            {searchBox}
+            <div className="filters four" aria-label="กรองจุด">
+              {[
+                ["all", "ทั้งหมด"],
+                ["รับเอกสาร", "จุดรับ"],
+                ["ส่งเอกสาร", "จุดส่ง"],
+                ["retry", "ทำใหม่"],
+              ].map(([v, title]) => (
+                <button
+                  key={v}
+                  className={stopFilter === v ? "selected" : ""}
+                  aria-pressed={stopFilter === v}
+                  onClick={() => {
+                    setStopFilter(v);
+                    setArranging(false);
+                  }}
+                >
+                  {title}
+                </button>
+              ))}
+            </div>
+            <div className="section-title">
+              <h2>เหลือ {shownRoute.length} จุด</h2>
+              <button
+                className="mode-button"
+                disabled={shownRoute.length < 2}
+                aria-pressed={arranging}
+                onClick={() => setArranging(!arranging)}
+              >
+                {arranging ? "✓ เสร็จแล้ว" : "⇅ จัดลำดับ"}
+              </button>
+            </div>
+            {arranging && (
+              <p className="hint">
+                จัดลำดับได้ข้ามงาน ลำดับนี้ใช้กับปุ่มทำต่อด้วย
+              </p>
+            )}
+            {shownRoute.map(({ job: j, stop: st }, i) =>
+              stopCard(
+                j,
+                st,
+                i,
+                shownRoute.map((x) => x.stop.id),
+              ),
+            )}
+            {!shownRoute.length && (
+              <Empty
+                text={
+                  search ? "ไม่พบจุดที่ตรงกับคำค้นหา" : "ไม่มีจุดในรายการนี้"
+                }
+              />
+            )}
+            {active.some((j) => j.status === "returning" && matches(j)) && (
+              <section className="panel">
+                <h2>↩ เอกสารที่ต้องคืน</h2>
+                <p>งานเหล่านี้ยังไม่เสร็จ ต้องคืนเอกสารให้ผู้มอบหมาย</p>
+                {active
+                  .filter((j) => j.status === "returning" && matches(j))
+                  .map(card)}
+              </section>
+            )}
+          </>
+        ) : tab === "history" ? (
+          <>
+            <span className="eyebrow">COMPLETED</span>
+            <h1>ประวัติงาน</h1>
+            <p className="subtitle">
+              ตรวจรายละเอียด รูปหลักฐาน และลำดับเหตุการณ์
+            </p>
+            {searchBox}
+            <label className="history-select">
+              ช่วงเวลา
+              <select
+                value={historyFilter}
+                onChange={(e) => setHistoryFilter(e.target.value)}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="today">วันนี้</option>
+                <option value="week">7 วันที่ผ่านมา</option>
+              </select>
+            </label>
+            {jobs
+              .filter(
+                (j) =>
+                  j.status === "done" &&
+                  matches(j) &&
+                  (historyFilter === "all" ||
+                    (!!j.completedAt &&
+                      (historyFilter === "today"
+                        ? new Date(j.completedAt).toDateString() ===
+                          new Date(clock).toDateString()
+                        : clock - Date.parse(j.completedAt) < 7 * 86400000))),
+              )
+              .map(card)}
+            {!jobs.some(
+              (j) =>
+                j.status === "done" &&
+                matches(j) &&
+                (historyFilter === "all" ||
+                  (!!j.completedAt &&
+                    (historyFilter === "today"
+                      ? new Date(j.completedAt).toDateString() ===
+                        new Date(clock).toDateString()
+                      : clock - Date.parse(j.completedAt) < 7 * 86400000))),
+            ) && <Empty text="ไม่พบประวัติในช่วงเวลาหรือคำค้นหานี้" />}
+          </>
+        ) : (
+          <>
+            <span className="eyebrow">YOUR WORKSPACE</span>
+            <h1>บัญชีของฉัน</h1>
+            <section className="panel">
+              <span className="avatar big">น</span>
+              <h2>คุณนัท · Messenger</h2>
+              <p>บัญชีตัวอย่างสำหรับทดลองขั้นตอนทำงาน</p>
+              <span className="pill">โหมดทดลอง</span>
+            </section>
+            <section className="panel">
+              <h2>เริ่มทดลองใหม่</h2>
+              <p>
+                ล้างความคืบหน้าและรูปชั่วคราว
+                แล้วกลับไปใช้ข้อมูลตัวอย่างเริ่มต้น
+              </p>
+              <button
+                className="secondary"
+                onClick={() => {
+                  setJobs(initial);
+                  setRouteOrder(
+                    initial.flatMap((j) => j.stops.map((st) => st.id)),
+                  );
+                  setSearch("");
+                  setFilter("all");
+                  setStopFilter("all");
+                  setHistoryFilter("all");
+                  setLastJob("MSG-0261");
+                  navigate("jobs");
+                  setNotice("เริ่มต้นข้อมูลตัวอย่างใหม่แล้ว");
+                }}
+              >
+                รีเซ็ตข้อมูลตัวอย่าง
+              </button>
+            </section>
+            <p className="hint">
+              ยังไม่เชื่อม Supabase Auth หรือ Google Drive
+              รูปจะหายเมื่อรีเฟรชหน้า
+            </p>
+          </>
+        )}
+        <input
+          ref={input}
+          className="file-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          aria-label="ถ่ายหรือเลือกรูปหลักฐาน"
+          onChange={(e) => {
+            void readPhoto(e);
+            e.target.value = "";
+          }}
+        />
+      </main>
+      <nav className="bottom" aria-label="เมนูหลัก">
+        {(["jobs", "stops", "history", "account"] as Tab[]).map((t, i) => (
+          <button
+            key={t}
+            className={tab === t ? "current" : ""}
+            aria-current={tab === t ? "page" : undefined}
+            onClick={() => navigate(t)}
+          >
+            {icon(t)}
+            <span>{["งานของฉัน", "จุดรับ–ส่ง", "ประวัติ", "บัญชี"][i]}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
 }
-function Photo({ photo, busy, onChoose }: { photo?: string; busy: boolean; onChoose: () => void }) { return <div className="photo-box">{photo && <img src={photo} className="preview" alt="รูปหลักฐานที่เลือก" />}<button className="camera" disabled={busy} onClick={onChoose}><span aria-hidden="true">◎</span>{busy ? 'กำลังเตรียมรูป…' : photo ? 'ถ่ายใหม่ / เปลี่ยนรูป' : 'ถ่ายรูป / เลือกรูปหลักฐาน'}<small>ต้องมีรูปก่อนยืนยันสำเร็จ</small></button></div> }
-function Empty({ text }: { text: string }) { return <section className="empty"><span aria-hidden="true">✓</span><p>{text}</p></section> }
+function Photo({
+  photo,
+  busy,
+  onChoose,
+}: {
+  photo?: string;
+  busy: boolean;
+  onChoose: () => void;
+}) {
+  return (
+    <div className="photo-box">
+      {photo && (
+        <img src={photo} className="preview" alt="รูปหลักฐานที่เลือก" />
+      )}
+      <button className="camera" disabled={busy} onClick={onChoose}>
+        <span aria-hidden="true">◎</span>
+        {busy
+          ? "กำลังเตรียมรูป…"
+          : photo
+            ? "ถ่ายใหม่ / เปลี่ยนรูป"
+            : "ถ่ายรูป / เลือกรูปหลักฐาน"}
+        <small>ต้องมีรูปก่อนยืนยันสำเร็จ</small>
+      </button>
+    </div>
+  );
+}
+function Empty({ text }: { text: string }) {
+  return (
+    <section className="empty">
+      <span aria-hidden="true">✓</span>
+      <p>{text}</p>
+    </section>
+  );
+}

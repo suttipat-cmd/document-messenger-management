@@ -9,6 +9,7 @@ npm ci
 npm run dev
 npm run build
 npm run lint
+npm test
 ```
 
 ## Required architecture
@@ -32,7 +33,7 @@ Bottom navigation, task cards, one-handed primary actions and minimum 48px touch
 
 ## Current state
 
-Project scaffold only. Backend, authentication, Drive integration and deployment are not configured yet. Next: interactive messenger prototype, then schema/RLS and backend integration.
+Interactive Messenger UI prototype. Backend, authentication, Drive integration and deployment are not configured yet. Public submission and desktop management screens are not implemented. Next: agree form fields and schema/RLS, then integrate backend.
 
 ## Messenger prototype — 22 October 2026
 
@@ -49,3 +50,9 @@ Verified: build/lint; 360px and 390px with no horizontal overflow and visible en
 - Actual provisioned region: ap-south-1 (Mumbai), verified in dashboard.
 
 The prototype does not yet connect to this backend. Do not use Supabase Storage for documents or evidence; use Google Workspace Drive through authorized Edge Functions. Public form fields and the database schema remain to be designed.
+
+## OMS-inspired UI refinement
+
+Compact clickable status summaries, direct job acceptance, resume action, search by job/place/requester, dedicated pending-return filter, cross-job stop ordering, pickup/delivery/retry filters, navigation links and optional telephone links, and time-filtered history with an in-memory event timeline. Telephone actions stay disabled without a supplied number. Google Maps links open a place search using sample address text; exact location accuracy is not validated.
+
+`npm test` covers acceptance/search/cross-job reorder, photo-required completion of every stop, retry reasons, return evidence, read-only returned jobs, history and reset. These are component interaction tests using jsdom and FileReader, not real device camera or backend upload tests. Browser checks cover 360px and 390px; photo capture on a physical smartphone remains pending. Events and evidence are not durable or authoritative until backend integration.
