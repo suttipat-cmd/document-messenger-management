@@ -119,8 +119,7 @@ export default function PublicRequest() {
       <header className="public-header">
         <span className="brandmark">m↗</span>
         <div>
-          <b>รับ–ส่งเอกสาร</b>
-          <small>ส่งงานรับ–ส่งเอกสาร</small>
+          <b>ระบบบริหารงานบริการ</b>
         </div>
         <a href="#/">เข้าสู่ระบบ</a>
       </header>
@@ -142,7 +141,7 @@ export default function PublicRequest() {
         ) : (
           <>
             <span className="eyebrow">ไม่ต้องสมัครสมาชิก</span>
-            <h1>{review ? "ตรวจสอบก่อนส่ง" : "สร้างงานรับ–ส่งเอกสาร"}</h1>
+            <h1>{review ? "ตรวจสอบก่อนส่ง" : "แบบฟอร์มมอบหมายงาน"}</h1>
             {error && (
               <div className="public-error" role="alert">
                 {error}

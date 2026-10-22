@@ -1962,3 +1962,122 @@ main {
     padding: 12px;
   }
 }
+.form-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.management-brand b {
+  font-size: 14px;
+  line-height: 1.5;
+}
+.management-toolbar {
+  display: grid;
+  grid-template-columns: minmax(230px, 2fr) minmax(130px, 1fr) minmax(
+      150px,
+      1fr
+    ) minmax(150px, 1fr);
+  gap: 10px;
+  border-bottom: 0;
+  padding-bottom: 10px;
+}
+.management-toolbar input,
+.management-toolbar select {
+  width: 100%;
+  max-width: 100%;
+  text-overflow: ellipsis;
+}
+.management-date-filters {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  padding: 0 14px 14px;
+  border-bottom: 1px solid #e8edef;
+  flex-wrap: wrap;
+}
+.management-date-filters label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  color: #74888e;
+}
+.management-date-filters input {
+  width: 160px;
+  font-size: 12px;
+}
+.filter-quick,
+.filter-clear {
+  min-height: 36px;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  background: #f0f5f3;
+  color: #396d5e;
+}
+.filter-clear {
+  background: transparent;
+  color: #74888e;
+}
+.filter-count {
+  margin-left: auto;
+  align-self: end;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #86969c;
+}
+.filter-error {
+  font-size: 12px;
+  color: #b44141;
+  padding: 10px 14px;
+  background: #fff5f4;
+}
+.public-header b {
+  font-size: 15px;
+}
+@media (max-width: 1100px) {
+  .management-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+  .management-toolbar > input {
+    grid-column: 1/-1;
+  }
+  .management-date-filters input {
+    width: 150px;
+  }
+}
+@media (max-width: 600px) {
+  .management-toolbar {
+    grid-template-columns: 1fr 1fr;
+    padding: 12px;
+  }
+  .management-toolbar > select:last-child {
+    grid-column: 1/-1;
+  }
+  .management-date-filters {
+    padding: 0 12px 12px;
+    gap: 8px;
+  }
+  .management-date-filters label {
+    flex: 1;
+    min-width: 0;
+  }
+  .management-date-filters input {
+    width: 100%;
+    min-height: 44px;
+  }
+  .filter-quick,
+  .filter-clear {
+    min-height: 44px;
+  }
+  .filter-count {
+    width: 100%;
+    margin: 0;
+    justify-content: flex-end;
+  }
+  .management-actions .form-link {
+    min-height: 44px;
+  }
+}

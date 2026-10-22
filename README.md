@@ -97,3 +97,10 @@ The department dropdown is sourced only from `Section Master.xlsx` (Query result
 Both forms require department and a job date (Bangkok today by default). Requester phone and stop addresses are optional. Job dates are stored separately from creation timestamps; existing jobs use their Bangkok creation date. Manager creation uses the dated RPC overload; public intake forwards `jobDate`. The date constraint rejects infinity and unsupported years.
 
 After acceptance, Admin and Super User retain read access only: operational command and reorder RPCs reject their mutations under the job row lock, and the UI removes action controls. Messenger operations remain unchanged. New rollback verification: `supabase/tests/fields_and_accepted_permissions.sql`. Both 20261021190611 and 20261021191158 migrations were applied through Dashboard; reconcile CLI migration history before db push. Tables show ordinal, job date, code, title, department, requester, messenger, status and progress. Status summaries and badges use matching colors. Interface terminology is Thai; proper names and source department codes remain unchanged.
+
+
+### Single form and service management naming
+
+The display name is ระบบบริหารงานบริการ (short sidebar label: บริหารงานบริการ), leaving room for future service types. The header action แบบฟอร์ม links directly to https://suttipat-cmd.github.io/document-messenger-management/#/request. The separate authenticated creation form, its frontend API helper, and the duplicate form navigation item have been removed; all UI submission now uses the same public form and protected Edge API. The older database creation RPCs remain for backwards compatibility.
+
+Management filters combine text search, status, department, assignee and an inclusive job-date range. Assignee selection uses account IDs, and department options reflect existing jobs so historical department names remain filterable. Today and clear-all controls support quick changes. Reversed date ranges show an error rather than silently changing the dates. Records without a job date are excluded when date filters are used.

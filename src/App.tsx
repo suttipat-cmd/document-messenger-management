@@ -24,6 +24,7 @@ export type Job = {
   requesterPhone?: string;
   jobDate?: string;
   messengerName?: string;
+  messengerId?: string;
   department: string;
   status: "new" | "active" | "returning" | "done";
   stops: Stop[];
@@ -137,7 +138,6 @@ export type RemoteWorkspace = {
   ) => Promise<unknown>;
   onReorder: (ids: string[]) => Promise<unknown>;
   onLogout: () => Promise<void>;
-  onCreate: () => void;
 };
 export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
   const [demoJobs, setJobs] = useState<Job[]>(initial);
@@ -537,7 +537,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             m<span>↗</span>
           </span>
           <span>
-            รับ–ส่งเอกสาร<small>งานรับ–ส่งเอกสาร</small>
+            บริหารงานบริการ<small>งานของฉัน</small>
           </span>
         </a>
         <span className="avatar">น</span>
@@ -776,11 +776,6 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     ? "งานทั้งหมด"
                     : "งานของฉัน"}
                 </h1>
-                {remote && remote.profile.role !== "messenger" && (
-                  <button className="mode-button" onClick={remote.onCreate}>
-                    + สร้างงาน
-                  </button>
-                )}
               </div>
               <div className="stats" aria-label="สรุปงาน">
                 {(

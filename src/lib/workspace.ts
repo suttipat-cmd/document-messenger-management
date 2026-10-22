@@ -100,6 +100,7 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         person: j.requester,
         requesterPhone: j.requester_phone,
         jobDate: j.job_date,
+        messengerId: j.messenger_id,
         messengerName: profiles.find((p) => p.id === j.messenger_id)
           ?.display_name,
         department: j.department,
@@ -144,34 +145,6 @@ export async function command(
 export async function reorder(ids: string[]) {
   if (!supabase) throw new Error("Supabase configuration missing");
   const r = await supabase.rpc("messenger_reorder", { p_stop_ids: ids });
-  if (r.error) throw r.error;
-}
-export type CreateJob = {
-  jobDate: string;
-  requesterPhone: string;
-  title: string;
-  requester: string;
-  department: string;
-  messengerId: string;
-  stops: {
-    name: string;
-    address: string;
-    kind: string;
-    contact: string;
-    phone: string;
-  }[];
-};
-export async function createJob(input: CreateJob) {
-  if (!supabase) throw new Error("Supabase configuration missing");
-  const r = await supabase.rpc("messenger_create_job", {
-    p_title: input.title,
-    p_job_date: input.jobDate,
-    p_requester_phone: input.requesterPhone,
-    p_requester: input.requester,
-    p_department: input.department,
-    p_messenger_id: input.messengerId,
-    p_stops: input.stops,
-  });
   if (r.error) throw r.error;
 }
 export function errorText(error: unknown) {

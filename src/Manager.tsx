@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import type { Job } from "./App";
 import type { Action } from "./lib/workspace";
 import type { Snapshot } from "./lib/workspace";
-import { dateLabel } from "./lib/dates";
+import { dateLabel, today } from "./lib/dates";
 import Loading from "./Loading";
 type Command = (
   job: Job,
@@ -22,7 +22,6 @@ export default function Manager({
   snapshot,
   users,
   busy,
-  onCreate,
   onRefresh,
   onLogout,
 }: {
@@ -30,28 +29,65 @@ export default function Manager({
   snapshot: Snapshot;
   users: ReactNode;
   busy: boolean;
-  onCreate: () => void;
   onRefresh: () => void;
   onLogout: () => void;
 }) {
   const [tab, setTab] = useState("jobs");
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
+  const [department, setDepartment] = useState("all");
+  const [messenger, setMessenger] = useState("all");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const invalidDates = !!from && !!to && from > to;
+  const departments = Array.from(
+    new Set(snapshot.jobs.map((j) => j.department)),
+  ).sort(new Intl.Collator("th").compare);
+  const messengers = Array.from(
+    new Map(
+      snapshot.jobs.map((j) => [
+        j.messengerId || j.messengerName || "",
+        j.messengerName || "ไม่ระบุผู้รับงาน",
+      ]),
+    ).entries(),
+  ).sort((a, b) => a[1].localeCompare(b[1], "th"));
+  const filtered =
+    search.trim() !== "" ||
+    status !== "all" ||
+    department !== "all" ||
+    messenger !== "all" ||
+    !!from ||
+    !!to;
+  const resetFilters = () => {
+    setSearch("");
+    setStatus("all");
+    setDepartment("all");
+    setMessenger("all");
+    setFrom("");
+    setTo("");
+    setSelected(undefined);
+  };
   const [selected, setSelected] = useState<string>();
   const jobs = snapshot.jobs.filter(
     (j) =>
+      !invalidDates &&
       (status === "all" || j.status === status) &&
+      (department === "all" || (j.department || "__blank") === department) &&
+      (messenger === "all" ||
+        (j.messengerId || j.messengerName || "__blank") === messenger) &&
+      (!from || (!!j.jobDate && j.jobDate >= from)) &&
+      (!to || (!!j.jobDate && j.jobDate <= to)) &&
       [j.id, j.title, j.person, j.messengerName, j.department]
         .join(" ")
         .toLowerCase()
-        .includes(search.toLowerCase()),
+        .includes(search.trim().toLowerCase()),
   );
   const job = snapshot.jobs.find((j) => j.id === selected);
   return (
     <div className="management-shell">
       <aside className="management-sidebar">
         <a className="management-brand" href="#/">
-          m↗ <b>รับ–ส่งเอกสาร</b>
+          m↗ <b>บริหารงานบริการ</b>
         </a>
         <nav aria-label="เมนูจัดการ">
           <button
@@ -68,7 +104,6 @@ export default function Manager({
               ♙ บัญชีผู้ใช้
             </button>
           )}
-          <a href="#/request">↗ ฟอร์มสร้างงาน</a>
         </nav>
         <div className="management-account">
           <b>{snapshot.profile?.display_name}</b>
@@ -85,15 +120,18 @@ export default function Manager({
       <main className="management-main">
         <header className="management-topbar">
           <div>
-            <h1>{tab === "users" ? "บัญชีผู้ใช้" : "งานรับ–ส่งเอกสาร"}</h1>
+            <h1>{tab === "users" ? "บัญชีผู้ใช้" : "งานทั้งหมด"}</h1>
           </div>
           <div className="management-actions">
             <button className="secondary" disabled={busy} onClick={onRefresh}>
               {busy ? <Loading /> : "↻ โหลดใหม่"}
             </button>
-            <button className="primary" disabled={busy} onClick={onCreate}>
-              + สร้างงาน
-            </button>
+            <a
+              className="primary form-link"
+              href="https://suttipat-cmd.github.io/document-messenger-management/#/request"
+            >
+              แบบฟอร์ม
+            </a>
           </div>
         </header>
         {tab === "users" ? (
@@ -136,8 +174,80 @@ export default function Manager({
                     </option>
                   ))}
                 </select>
-                <span>{jobs.length} งาน</span>
+                <select
+                  aria-label="แผนก"
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                >
+                  <option value="all">ทุกแผนก</option>
+                  {departments.map((d) => (
+                    <option key={d || "__blank"} value={d || "__blank"}>
+                      {d || "ไม่ระบุแผนก"}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="ผู้รับงาน"
+                  value={messenger}
+                  onChange={(e) => setMessenger(e.target.value)}
+                >
+                  <option value="all">ผู้รับงานทั้งหมด</option>
+                  {messengers.map(([id, name]) => (
+                    <option key={id || "__blank"} value={id || "__blank"}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
               </div>
+              <div className="management-date-filters">
+                <label>
+                  ตั้งแต่วันที่
+                  <input
+                    type="date"
+                    aria-label="ตั้งแต่วันที่"
+                    min="0001-01-01"
+                    max="9999-12-31"
+                    value={from}
+                    onChange={(e) => setFrom(e.target.value)}
+                  />
+                </label>
+                <label>
+                  ถึงวันที่
+                  <input
+                    type="date"
+                    aria-label="ถึงวันที่"
+                    min={from || "0001-01-01"}
+                    max="9999-12-31"
+                    value={to}
+                    onChange={(e) => setTo(e.target.value)}
+                  />
+                </label>
+                <button
+                  className="filter-quick"
+                  onClick={() => {
+                    const d = today();
+                    setFrom(d);
+                    setTo(d);
+                  }}
+                >
+                  วันนี้
+                </button>
+                {filtered && (
+                  <button className="filter-clear" onClick={resetFilters}>
+                    ล้างตัวกรอง
+                  </button>
+                )}
+                <span className="filter-count" role="status">
+                  {filtered
+                    ? `${jobs.length} จาก ${snapshot.jobs.length} งาน`
+                    : `${jobs.length} งาน`}
+                </span>
+              </div>
+              {invalidDates && (
+                <p className="filter-error" role="alert">
+                  วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
+                </p>
+              )}
               <div
                 className="management-table"
                 role="table"

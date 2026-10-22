@@ -2,21 +2,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import App from "./App";
 import Required from "./Required";
-import departments from "./data/departments.json";
-import { today } from "./lib/dates";
 import Manager from "./Manager";
 import Loading from "./Loading";
 import PublicRequest from "./PublicRequest";
 import { supabase } from "./lib/supabase";
 import {
   command,
-  createJob,
   errorText,
   loadWorkspace,
   reorder,
   setProfile,
 } from "./lib/workspace";
-import type { Snapshot, CreateJob } from "./lib/workspace";
+import type { Snapshot } from "./lib/workspace";
 
 export default function ConnectedApp() {
   const [publicRoute, setPublicRoute] = useState(() =>
@@ -41,7 +38,6 @@ function Workspace() {
   const [refreshing, setRefreshing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const [demo, setDemo] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [connection, setConnection] = useState("กำลังเชื่อมต่อ");
   const request = useRef(0);
   const lock = useRef(false);
@@ -74,7 +70,6 @@ function Workspace() {
         request.current++;
         setSnapshot(null);
         setError("");
-        setCreating(false);
         authId.current = s?.user.id;
       }
       setSession(s);
@@ -235,47 +230,28 @@ function Workspace() {
             <Loading label="กำลังบันทึก…" />
           </div>
         )}
-        {creating ? (
-          <div className="compact-form">
-            <JobForm
-              messengers={snapshot.messengers}
+        <Manager
+          onCommand={(j, a, s, n) => mutate(() => command(j, a, s, n))}
+          snapshot={snapshot}
+          busy={saving || refreshing || loggingOut}
+          onRefresh={() => void refresh().catch(() => {})}
+          onLogout={() => void logout()}
+          users={snapshot.profiles.map((p, index) => (
+            <ProfileEditor
+              index={index + 1}
+              key={p.id + String(p.active) + p.role + p.display_name}
+              profile={p}
               saving={saving}
-              onCancel={() => setCreating(false)}
-              onSave={async (input) => {
+              onSave={async (profile) => {
                 try {
-                  await mutate(() => createJob(input));
-                  setCreating(false);
+                  await mutate(() => setProfile(profile));
                 } catch {
                   /* banner */
                 }
               }}
             />
-          </div>
-        ) : (
-          <Manager
-            onCommand={(j, a, s, n) => mutate(() => command(j, a, s, n))}
-            snapshot={snapshot}
-            busy={saving || refreshing || loggingOut}
-            onCreate={() => setCreating(true)}
-            onRefresh={() => void refresh().catch(() => {})}
-            onLogout={() => void logout()}
-            users={snapshot.profiles.map((p, index) => (
-              <ProfileEditor
-                index={index + 1}
-                key={p.id + String(p.active) + p.role + p.display_name}
-                profile={p}
-                saving={saving}
-                onSave={async (profile) => {
-                  try {
-                    await mutate(() => setProfile(profile));
-                  } catch {
-                    /* banner */
-                  }
-                }}
-              />
-            ))}
-          />
-        )}
+          ))}
+        />
       </>
     );
   return (
@@ -308,7 +284,6 @@ function Workspace() {
             />
           )}
         </span>
-        <a href="#/request">ฟอร์มสร้างงาน</a>
         <button
           disabled={saving || refreshing}
           onClick={() => void refresh().catch(() => {})}
@@ -316,34 +291,17 @@ function Workspace() {
           โหลดใหม่
         </button>
       </div>
-      {creating ? (
-        <JobForm
-          messengers={snapshot.messengers}
-          saving={saving}
-          onCancel={() => setCreating(false)}
-          onSave={async (input) => {
-            try {
-              await mutate(() => createJob(input));
-              setCreating(false);
-            } catch {
-              /* banner displays the failure */
-            }
-          }}
-        />
-      ) : (
-        <App
-          remote={{
-            jobs: snapshot.jobs,
-            order: snapshot.order,
-            profile: snapshot.profile,
-            saving,
-            onCommand: (j, a, s, n) => mutate(() => command(j, a, s, n)),
-            onReorder: (ids) => mutate(() => reorder(ids)),
-            onLogout: logout,
-            onCreate: () => setCreating(true),
-          }}
-        />
-      )}
+      <App
+        remote={{
+          jobs: snapshot.jobs,
+          order: snapshot.order,
+          profile: snapshot.profile,
+          saving,
+          onCommand: (j, a, s, n) => mutate(() => command(j, a, s, n)),
+          onReorder: (ids) => mutate(() => reorder(ids)),
+          onLogout: logout,
+        }}
+      />
     </>
   );
 }
@@ -356,7 +314,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="auth-shell">
       <span className="brandmark">m↗</span>
-      <span className="eyebrow">รับ–ส่งเอกสาร</span>
+      <span className="eyebrow">ระบบบริหารงานบริการ</span>
       <h1>{signup ? "สร้างบัญชี" : "เข้าสู่ระบบ"}</h1>
 
       <a className="public-entry" href="#/request">
@@ -448,220 +406,6 @@ function Auth({ onDemo }: { onDemo: () => void }) {
     </div>
   );
 }
-function JobForm({
-  messengers,
-  saving,
-  onCancel,
-  onSave,
-}: {
-  messengers: Snapshot["messengers"];
-  saving: boolean;
-  onCancel: () => void;
-  onSave: (input: CreateJob) => Promise<void>;
-}) {
-  const [form, setForm] = useState<CreateJob>({
-    jobDate: today(),
-    requesterPhone: "",
-    title: "",
-    requester: "",
-    department: "",
-    messengerId: "",
-    stops: [
-      { name: "", address: "", kind: "รับเอกสาร", contact: "", phone: "" },
-    ],
-  });
-  return (
-    <main className="manager-form">
-      <button className="back" disabled={saving} onClick={onCancel}>
-        ← กลับกองงาน
-      </button>
-      <h1>สร้างและมอบหมายงาน</h1>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void onSave(form);
-        }}
-      >
-        <fieldset disabled={saving}>
-          {(
-            [
-              ["title", "ชื่องาน"],
-              ["requester", "ผู้มอบหมาย"],
-            ] as const
-          ).map(([key, title]) => (
-            <label className="field" key={key}>
-              {title} <Required />
-              <input
-                required
-                maxLength={key === "title" ? 200 : 120}
-                value={form[key]}
-                onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-              />
-            </label>
-          ))}
-          <label className="field">
-            แผนก <Required />
-            <select
-              required
-              value={form.department}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-            >
-              <option value="">เลือกแผนก</option>
-              {departments.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            วันที่ <Required />
-            <input
-              type="date"
-              min="0001-01-01"
-              max="9999-12-31"
-              required
-              value={form.jobDate}
-              onChange={(e) => setForm({ ...form, jobDate: e.target.value })}
-            />
-          </label>
-          <label className="field">
-            เบอร์ติดต่อผู้มอบหมาย
-            <input
-              type="tel"
-              maxLength={40}
-              value={form.requesterPhone}
-              onChange={(e) =>
-                setForm({ ...form, requesterPhone: e.target.value })
-              }
-            />
-          </label>
-          <label className="field">
-            ผู้รับส่งเอกสาร <Required />
-            <select
-              required
-              value={form.messengerId}
-              onChange={(e) =>
-                setForm({ ...form, messengerId: e.target.value })
-              }
-            >
-              <option value="">เลือกผู้รับส่งเอกสาร</option>
-              {messengers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.display_name}
-                </option>
-              ))}
-            </select>
-          </label>
-          {!messengers.length && (
-            <p className="auth-message">
-              ยังไม่มีผู้รับส่งเอกสาร ที่เปิดใช้งาน ให้ผู้ใช้สร้างบัญชี
-              แล้วผู้ดูแลระบบ เปิดใช้งานผ่านเมนูจัดการบัญชีผู้ใช้
-            </p>
-          )}
-          {form.stops.map((stop, i) => (
-            <section className="panel" key={i}>
-              <div className="row">
-                <h2>จุดที่ {i + 1}</h2>
-                {form.stops.length > 1 && (
-                  <button
-                    type="button"
-                    className="mode-button"
-                    onClick={() =>
-                      setForm({
-                        ...form,
-                        stops: form.stops.filter((_, n) => n !== i),
-                      })
-                    }
-                  >
-                    ลบจุดนี้
-                  </button>
-                )}
-              </div>
-              <label className="field">
-                ประเภท <Required />
-                <select
-                  required
-                  value={stop.kind}
-                  onChange={(e) =>
-                    setForm({
-                      ...form,
-                      stops: form.stops.map((s, n) =>
-                        n === i ? { ...s, kind: e.target.value } : s,
-                      ),
-                    })
-                  }
-                >
-                  <option>รับเอกสาร</option>
-                  <option>ส่งเอกสาร</option>
-                </select>
-              </label>
-              {(
-                [
-                  ["name", "ชื่อสถานที่"],
-                  ["address", "ที่อยู่"],
-                  ["contact", "ผู้ติดต่อ"],
-                  ["phone", "เบอร์โทร"],
-                ] as const
-              ).map(([key, title]) => (
-                <label key={key} className="field">
-                  {title} {key === "name" && <Required />}
-                  <input
-                    required={key === "name"}
-                    type={key === "phone" ? "tel" : "text"}
-                    maxLength={
-                      key === "address"
-                        ? 1000
-                        : key === "phone"
-                          ? 40
-                          : key === "name"
-                            ? 200
-                            : 120
-                    }
-                    value={stop[key]}
-                    onChange={(e) =>
-                      setForm({
-                        ...form,
-                        stops: form.stops.map((s, n) =>
-                          n === i ? { ...s, [key]: e.target.value } : s,
-                        ),
-                      })
-                    }
-                  />
-                </label>
-              ))}
-            </section>
-          ))}
-          <button
-            type="button"
-            className="secondary"
-            disabled={form.stops.length >= 50}
-            onClick={() =>
-              setForm({
-                ...form,
-                stops: [
-                  ...form.stops,
-                  {
-                    name: "",
-                    address: "",
-                    kind: "ส่งเอกสาร",
-                    contact: "",
-                    phone: "",
-                  },
-                ],
-              })
-            }
-          >
-            + เพิ่มจุดรับ–ส่ง
-          </button>
-          <button className="primary" disabled={!messengers.length}>
-            {saving ? <Loading label="กำลังบันทึก…" /> : "สร้างและมอบหมายงาน"}
-          </button>
-        </fieldset>
-      </form>
-    </main>
-  );
-}
-
 function ProfileEditor({
   index,
   profile,

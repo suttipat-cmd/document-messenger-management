@@ -152,7 +152,6 @@ describe("Messenger Phase 1", () => {
       onCommand,
       onReorder: vi.fn(),
       onLogout: vi.fn(),
-      onCreate: vi.fn(),
     };
     render(<App remote={remote} />);
     await u.click(screen.getByRole("button", { name: "ทำต่อ →" }));

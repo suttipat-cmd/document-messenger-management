@@ -28,7 +28,6 @@ vi.mock("./lib/workspace", () => ({
   loadWorkspace: mocks.load,
   command: vi.fn(),
   reorder: vi.fn(),
-  createJob: vi.fn(),
   setProfile: vi.fn(),
   errorText: () => "เชื่อมต่อหรือบันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
 }));
