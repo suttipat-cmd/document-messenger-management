@@ -48,7 +48,7 @@ it("filters the management list and opens job details without showing the Messen
   expect(screen.getByText("ปลายทาง")).toBeTruthy();
   expect(screen.queryByRole("navigation", { name: "เมนูหลัก" })).toBeNull();
   await u.type(screen.getByRole("textbox", { name: "ค้นหางาน" }), "missing");
-  expect(screen.getByText("ไม่พบงาน")).toBeTruthy();
+  expect(screen.getByText("ไม่พบงานตามตัวกรอง")).toBeTruthy();
 });
 it("retains operational commands and hides account management for Super User", async () => {
   const command = vi.fn().mockResolvedValue(undefined);
@@ -133,9 +133,7 @@ it("links to the single public form and removes the duplicate menu and create bu
   );
   expect(screen.queryByRole("link", { name: /ฟอร์มสร้างงาน/ })).toBeNull();
   expect(screen.queryByRole("button", { name: /สร้างงาน/ })).toBeNull();
-  expect(
-    screen.getByRole("link", { name: /บริหารงานบริการ/ }),
-  ).toBeTruthy();
+  expect(screen.getByRole("link", { name: /บริหารงานบริการ/ })).toBeTruthy();
 });
 it("combines department, assignee, status and inclusive date filters and clears them together", async () => {
   const u = userEvent.setup();
@@ -187,4 +185,61 @@ it("combines department, assignee, status and inclusive date filters and clears 
     "วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด",
   );
   expect(screen.queryByRole("button", { name: /MSG-/ })).toBeNull();
+});
+it("paginates after filtering, keeps global row numbers and resets to page one when filters change", async () => {
+  const u = userEvent.setup();
+  const jobs = Array.from({ length: 25 }, (_, i) => ({
+    ...snapshot.jobs[0],
+    id: `MSG-2610${String(i + 1).padStart(4, "0")}`,
+    title: "งาน " + (i + 1),
+    department: i < 12 ? "บัญชี" : "บริหาร",
+  }));
+  render(
+    <Manager
+      snapshot={{ ...snapshot, jobs }}
+      users={null}
+      busy={false}
+      onCommand={vi.fn()}
+      onRefresh={vi.fn()}
+      onLogout={vi.fn()}
+    />,
+  );
+  expect(screen.getAllByRole("button", { name: /MSG-/ })).toHaveLength(10);
+  await u.click(screen.getByRole("button", { name: "หน้าถัดไป" }));
+  expect(
+    screen.getAllByRole("button", { name: /MSG-/ })[0].textContent,
+  ).toContain("MSG-26100011");
+  expect(
+    screen.getAllByRole("button", { name: /MSG-/ })[0].querySelector(".ordinal")
+      ?.textContent,
+  ).toBe("11");
+  await u.selectOptions(screen.getByLabelText("แผนก"), "บริหาร");
+  expect(
+    screen.getByRole("button", { name: "หน้าก่อนหน้า" }).matches(":disabled"),
+  ).toBe(true);
+  expect(screen.getByRole("status").textContent).toBe("13 จาก 25 งาน");
+  await u.click(screen.getByRole("button", { name: "ลบตัวกรอง บริหาร" }));
+  expect(screen.getByLabelText("แผนก").getAttribute("value")).toBeNull();
+  expect(screen.getByRole("status").textContent).toBe("25 งาน");
+});
+it("switches the detail history tab using the keyboard", async () => {
+  const u = userEvent.setup();
+  render(
+    <Manager
+      snapshot={snapshot}
+      users={null}
+      busy={false}
+      onCommand={vi.fn()}
+      onRefresh={vi.fn()}
+      onLogout={vi.fn()}
+    />,
+  );
+  await u.click(screen.getByRole("button", { name: /MSG-/ }));
+  const details = screen.getByRole("tab", { name: "รายละเอียด" });
+  details.focus();
+  await u.keyboard("{ArrowRight}");
+  expect(
+    screen.getByRole("tab", { name: "ประวัติ" }).getAttribute("aria-selected"),
+  ).toBe("true");
+  expect(screen.getByRole("tabpanel").textContent).toContain("ยังไม่มีประวัติ");
 });

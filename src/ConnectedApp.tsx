@@ -1,10 +1,20 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import ValidatedForm from "./ui/ValidatedForm";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { Session } from "@supabase/supabase-js";
+import Dialog from "./ui/Dialog";
+import { Skeleton, Toast, Alert } from "./ui/Feedback";
 import App from "./App";
 import Required from "./Required";
 import Manager from "./Manager";
 import Loading from "./Loading";
-import PublicRequest from "./PublicRequest";
+const PublicRequest = lazy(() => import("./PublicRequest"));
 import { supabase } from "./lib/supabase";
 import {
   command,
@@ -27,13 +37,24 @@ export default function ConnectedApp() {
     window.addEventListener("hashchange", change);
     return () => window.removeEventListener("hashchange", change);
   }, []);
-  return publicRoute ? <PublicRequest /> : <Workspace />;
+  return publicRoute ? (
+    <Suspense fallback={<Skeleton label="กำลังโหลดแบบฟอร์ม" />}>
+      <PublicRequest />
+    </Suspense>
+  ) : (
+    <Workspace />
+  );
 }
 function Workspace() {
   const [session, setSession] = useState<Session | null>(null);
   const [ready, setReady] = useState(!supabase);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<{ id: number; message: string } | null>(
+    null,
+  );
+  const toastSerial = useRef(0);
+  const closeToast = useCallback(() => setToast(null), []);
   const [saving, setSaving] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -133,11 +154,14 @@ function Workspace() {
     if (lock.current) throw new Error("Saving");
     lock.current = true;
     setSaving(true);
+    setToast(null);
+    setError("");
     let committed = false;
     try {
       await operation();
       committed = true;
       await refresh();
+      setToast({ id: ++toastSerial.current, message: "บันทึกข้อมูลสำเร็จ" });
     } catch (e) {
       setError(
         committed
@@ -180,8 +204,8 @@ function Workspace() {
   if (!session) return <Auth onDemo={() => setDemo(true)} />;
   if (!snapshot)
     return (
-      <div className="auth-shell">
-        <Loading label="กำลังโหลดพื้นที่ทำงาน" />
+      <div className="workspace-loading">
+        {!error && <Skeleton />}
         {error && <p role="alert">{error}</p>}
         <button
           className="primary"
@@ -220,11 +244,10 @@ function Workspace() {
   if (snapshot.profile.role !== "messenger")
     return (
       <>
-        {error && (
-          <div className="connection-error" role="alert">
-            {error}
-          </div>
+        {toast && (
+          <Toast key={toast.id} message={toast.message} onClose={closeToast} />
         )}
+        {error && <Alert tone="danger">{error}</Alert>}
         {saving && (
           <div className="save-indicator">
             <Loading label="กำลังบันทึก…" />
@@ -243,11 +266,7 @@ function Workspace() {
               profile={p}
               saving={saving}
               onSave={async (profile) => {
-                try {
-                  await mutate(() => setProfile(profile));
-                } catch {
-                  /* banner */
-                }
+                await mutate(() => setProfile(profile));
               }}
             />
           ))}
@@ -256,6 +275,9 @@ function Workspace() {
     );
   return (
     <>
+      {toast && (
+        <Toast key={toast.id} message={toast.message} onClose={closeToast} />
+      )}
       {error && (
         <div className="connection-error" role="alert">
           {error}
@@ -320,7 +342,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
       <a className="public-entry" href="#/request">
         สร้างงานโดยไม่ต้องเข้าสู่ระบบ →
       </a>
-      <form
+      <ValidatedForm
         onSubmit={async (e) => {
           e.preventDefault();
           if (!supabase) return;
@@ -388,7 +410,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
             "เข้าสู่ระบบ"
           )}
         </button>
-      </form>
+      </ValidatedForm>
       <button
         className="secondary"
         disabled={busy}
@@ -406,7 +428,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
     </div>
   );
 }
-function ProfileEditor({
+export function ProfileEditor({
   index,
   profile,
   saving,
@@ -418,55 +440,119 @@ function ProfileEditor({
   onSave: (p: Snapshot["profiles"][number]) => Promise<void>;
 }) {
   const [p, setP] = useState(profile);
+  const [confirm, setConfirm] = useState(false);
+  const [failure, setFailure] = useState("");
+  const sensitive = p.role !== profile.role || p.active !== profile.active;
+  async function save() {
+    setFailure("");
+    try {
+      await onSave(p);
+      setConfirm(false);
+    } catch {
+      setFailure("ยังยืนยันผลไม่ได้ กรุณาตรวจข้อความการเชื่อมต่อและโหลดใหม่");
+    }
+  }
   return (
-    <form
-      className="profile-editor"
-      onSubmit={(e) => {
-        e.preventDefault();
-        void onSave(p);
-      }}
-    >
-      <fieldset disabled={saving}>
-        <span className="account-ordinal">
-          <small>ลำดับ</small>
-          {index}
-        </span>
-        <span className="code">{profile.email || profile.id.slice(0, 8)}</span>
-        <label className="field">
-          ชื่อ <Required />
-          <input
-            required
-            maxLength={120}
-            value={p.display_name}
-            onChange={(e) => setP({ ...p, display_name: e.target.value })}
-          />
-        </label>
-        <label className="field">
-          บทบาท <Required />
-          <select
-            required
-            value={p.role}
-            onChange={(e) =>
-              setP({ ...p, role: e.target.value as typeof p.role })
-            }
-          >
-            <option value="messenger">ผู้รับส่งเอกสาร</option>
-            <option value="super_user">ผู้จัดการงาน</option>
-            <option value="admin">ผู้ดูแลระบบ</option>
-          </select>
-        </label>
-        <label className="active-check">
-          <input
-            type="checkbox"
-            checked={p.active}
-            onChange={(e) => setP({ ...p, active: e.target.checked })}
-          />
-          เปิดใช้งาน
-        </label>
-        <button className="secondary">
-          {saving ? <Loading label="กำลังบันทึก…" /> : "บันทึก"}
-        </button>
-      </fieldset>
-    </form>
+    <>
+      <ValidatedForm
+        className="profile-editor"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (sensitive) setConfirm(true);
+          else void save();
+        }}
+      >
+        <fieldset disabled={saving}>
+          <span className="account-ordinal">
+            <small>ลำดับ</small>
+            {index}
+          </span>
+          <span className="code">
+            {profile.email || profile.id.slice(0, 8)}
+          </span>
+          <label className="field">
+            ชื่อ <Required />
+            <input
+              required
+              maxLength={120}
+              value={p.display_name}
+              onChange={(e) => setP({ ...p, display_name: e.target.value })}
+            />
+          </label>
+          <label className="field">
+            บทบาท <Required />
+            <select
+              required
+              value={p.role}
+              onChange={(e) =>
+                setP({ ...p, role: e.target.value as typeof p.role })
+              }
+            >
+              <option value="messenger">ผู้รับส่งเอกสาร</option>
+              <option value="super_user">ผู้จัดการงาน</option>
+              <option value="admin">ผู้ดูแลระบบ</option>
+            </select>
+          </label>
+          <label className="active-check">
+            <input
+              type="checkbox"
+              role="switch"
+              aria-checked={p.active}
+              checked={p.active}
+              onChange={(e) => setP({ ...p, active: e.target.checked })}
+            />
+            เปิดใช้งาน
+          </label>
+          <button className="secondary">
+            {saving ? <Loading label="กำลังบันทึก…" /> : "บันทึก"}
+          </button>
+        </fieldset>
+        {failure && !confirm && <Alert tone="danger">{failure}</Alert>}
+      </ValidatedForm>
+      {confirm && (
+        <Dialog
+          title="ยืนยันการเปลี่ยนสิทธิ์"
+          busy={saving}
+          onClose={() => setConfirm(false)}
+        >
+          <p>{profile.email || profile.display_name}</p>
+          <dl className="review-data">
+            <dt>บทบาท</dt>
+            <dd>
+              {
+                {
+                  admin: "ผู้ดูแลระบบ",
+                  super_user: "ผู้จัดการงาน",
+                  messenger: "ผู้รับส่งเอกสาร",
+                }[p.role]
+              }
+            </dd>
+            <dt>การใช้งาน</dt>
+            <dd>{p.active ? "เปิดใช้งาน" : "ปิดใช้งาน"}</dd>
+          </dl>
+          {failure && <Alert tone="danger">{failure}</Alert>}
+          <div className="dialog-actions">
+            <button
+              className="secondary"
+              disabled={saving}
+              onClick={() => setConfirm(false)}
+            >
+              ยกเลิก
+            </button>
+            <button
+              className="primary"
+              disabled={saving}
+              onClick={() => void save()}
+            >
+              {saving ? (
+                <Loading label="กำลังบันทึก…" />
+              ) : (
+                "ยืนยันการเปลี่ยนสิทธิ์"
+              )}
+            </button>
+          </div>
+        </Dialog>
+      )}
+    </>
   );
 }

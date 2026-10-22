@@ -4,6 +4,8 @@ import type { Job } from "./App";
 import type { Action } from "./lib/workspace";
 import type { Snapshot } from "./lib/workspace";
 import { dateLabel, today } from "./lib/dates";
+import Icon from "./ui/Icon";
+import { EmptyState } from "./ui/Feedback";
 import Loading from "./Loading";
 type Command = (
   job: Job,
@@ -67,6 +69,8 @@ export default function Manager({
     setTo("");
     setSelected(undefined);
   };
+  const [pageSize, setPageSize] = useState(10);
+  const [paging, setPaging] = useState({ key: "", page: 1 });
   const [selected, setSelected] = useState<string>();
   const jobs = snapshot.jobs.filter(
     (j) =>
@@ -82,26 +86,94 @@ export default function Manager({
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
   );
+  const pageKey = JSON.stringify([
+    search,
+    status,
+    department,
+    messenger,
+    from,
+    to,
+    pageSize,
+  ]);
+  const pageCount = Math.max(1, Math.ceil(jobs.length / pageSize));
+  const page = paging.key === pageKey ? Math.min(paging.page, pageCount) : 1;
+  const pageStart = (page - 1) * pageSize;
+  const visibleJobs = jobs.slice(pageStart, pageStart + pageSize);
+  const goPage = (n: number) =>
+    setPaging({ key: pageKey, page: Math.max(1, Math.min(n, pageCount)) });
+  const chips = [
+    ...(search.trim()
+      ? [
+          {
+            id: "search",
+            label: "ค้นหา: " + search.trim(),
+            clear: () => setSearch(""),
+          },
+        ]
+      : []),
+    ...(status !== "all"
+      ? [
+          {
+            id: "status",
+            label: labels[status as keyof typeof labels],
+            clear: () => setStatus("all"),
+          },
+        ]
+      : []),
+    ...(department !== "all"
+      ? [
+          {
+            id: "department",
+            label: department === "__blank" ? "ไม่ระบุแผนก" : department,
+            clear: () => setDepartment("all"),
+          },
+        ]
+      : []),
+    ...(messenger !== "all"
+      ? [
+          {
+            id: "messenger",
+            label:
+              messengers.find(([id]) => (id || "__blank") === messenger)?.[1] ||
+              "ผู้รับงาน",
+            clear: () => setMessenger("all"),
+          },
+        ]
+      : []),
+    ...(from
+      ? [
+          {
+            id: "from",
+            label: "ตั้งแต่ " + dateLabel(from),
+            clear: () => setFrom(""),
+          },
+        ]
+      : []),
+    ...(to
+      ? [{ id: "to", label: "ถึง " + dateLabel(to), clear: () => setTo("") }]
+      : []),
+  ];
   const job = snapshot.jobs.find((j) => j.id === selected);
   return (
     <div className="management-shell">
       <aside className="management-sidebar">
         <a className="management-brand" href="#/">
-          m↗ <b>บริหารงานบริการ</b>
+          <Icon name="jobs" /> <b>บริหารงานบริการ</b>
         </a>
         <nav aria-label="เมนูจัดการ">
           <button
             className={tab === "jobs" ? "selected" : ""}
             onClick={() => setTab("jobs")}
           >
-            ▦ งานทั้งหมด <span>{snapshot.jobs.length}</span>
+            <Icon name="jobs" size={18} /> งานทั้งหมด{" "}
+            <span>{snapshot.jobs.length}</span>
           </button>
           {snapshot.profile?.role === "admin" && (
             <button
               className={tab === "users" ? "selected" : ""}
               onClick={() => setTab("users")}
             >
-              ♙ บัญชีผู้ใช้
+              <Icon name="account" size={18} /> บัญชีผู้ใช้
             </button>
           )}
         </nav>
@@ -124,7 +196,13 @@ export default function Manager({
           </div>
           <div className="management-actions">
             <button className="secondary" disabled={busy} onClick={onRefresh}>
-              {busy ? <Loading /> : "↻ โหลดใหม่"}
+              {busy ? (
+                <Loading />
+              ) : (
+                <>
+                  <Icon name="refresh" size={16} /> โหลดใหม่
+                </>
+              )}
             </button>
             <a
               className="primary form-link"
@@ -243,6 +321,26 @@ export default function Manager({
                     : `${jobs.length} งาน`}
                 </span>
               </div>
+              {chips.length > 0 && (
+                <div className="ds-chips" aria-label="ตัวกรองที่เลือก">
+                  {chips.map((c) => (
+                    <span className="ds-chip" key={c.id}>
+                      {c.label}
+                      <span
+                        className="ds-tooltip"
+                        data-tooltip={"ลบ " + c.label}
+                      >
+                        <button
+                          aria-label={"ลบตัวกรอง " + c.label}
+                          onClick={c.clear}
+                        >
+                          <Icon name="close" size={14} />
+                        </button>
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              )}
               {invalidDates && (
                 <p className="filter-error" role="alert">
                   วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
@@ -270,7 +368,7 @@ export default function Manager({
                     </span>
                   ))}
                 </div>
-                {jobs.map((j, index) => (
+                {visibleJobs.map((j, index) => (
                   <button
                     key={j.id}
                     className={
@@ -282,7 +380,7 @@ export default function Manager({
                     onClick={() => setSelected(j.id)}
                   >
                     <span className="ordinal" data-label="ลำดับ">
-                      {index + 1}
+                      {pageStart + index + 1}
                     </span>
                     <span data-label="วันที่">{dateLabel(j.jobDate)}</span>
                     <span className="code" data-label="เลขงาน">
@@ -314,7 +412,86 @@ export default function Manager({
                   </button>
                 ))}
               </div>
-              {!jobs.length && <div className="management-empty">ไม่พบงาน</div>}
+              {!jobs.length && (
+                <EmptyState
+                  title={
+                    snapshot.jobs.length ? "ไม่พบงานตามตัวกรอง" : "ยังไม่มีงาน"
+                  }
+                  description={
+                    snapshot.jobs.length
+                      ? "ลองเปลี่ยนหรือล้างตัวกรอง"
+                      : "เริ่มมอบหมายงานผ่านแบบฟอร์ม"
+                  }
+                  action={
+                    snapshot.jobs.length ? (
+                      <button className="secondary" onClick={resetFilters}>
+                        ล้างตัวกรอง
+                      </button>
+                    ) : (
+                      <a
+                        className="primary form-link"
+                        href="https://suttipat-cmd.github.io/document-messenger-management/#/request"
+                      >
+                        แบบฟอร์ม
+                      </a>
+                    )
+                  }
+                />
+              )}
+              {jobs.length > 0 && (
+                <div className="ds-pagination">
+                  <label>
+                    แสดง{" "}
+                    <select
+                      aria-label="จำนวนงานต่อหน้า"
+                      value={pageSize}
+                      onChange={(e) => setPageSize(Number(e.target.value))}
+                    >
+                      {[10, 20, 50].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>{" "}
+                    งานต่อหน้า
+                  </label>
+                  <span>
+                    {pageStart + 1}–
+                    {Math.min(pageStart + pageSize, jobs.length)} จาก{" "}
+                    {jobs.length} งาน
+                  </span>
+                  <nav aria-label="แบ่งหน้างาน">
+                    <button
+                      aria-label="หน้าก่อนหน้า"
+                      disabled={page === 1}
+                      onClick={() => goPage(page - 1)}
+                    >
+                      <Icon name="back" size={16} />
+                    </button>
+                    {Array.from(
+                      { length: Math.min(5, pageCount) },
+                      (_, i) =>
+                        Math.max(1, Math.min(page - 2, pageCount - 4)) + i,
+                    ).map((n) => (
+                      <button
+                        key={n}
+                        aria-label={"หน้า " + n}
+                        aria-current={n === page ? "page" : undefined}
+                        onClick={() => goPage(n)}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      aria-label="หน้าถัดไป"
+                      disabled={page === pageCount}
+                      onClick={() => goPage(page + 1)}
+                    >
+                      <Icon name="chevron" size={16} />
+                    </button>
+                  </nav>
+                </div>
+              )}
             </section>
           </>
         )}
@@ -342,6 +519,7 @@ function JobPanel({
   onCommand: Command;
   onClose: () => void;
 }) {
+  const [detailTab, setDetailTab] = useState("details");
   async function run(action: Action, stopId?: string) {
     try {
       await onCommand(job, action, stopId, "");
@@ -354,69 +532,116 @@ function JobPanel({
       <header>
         <span className="code">{job.id}</span>
         <button aria-label="ปิดรายละเอียด" onClick={onClose}>
-          ×
+          <Icon name="close" />
         </button>
       </header>
+      <nav className="ds-breadcrumb" aria-label="เส้นทางนำทาง">
+        <button onClick={onClose}>งานทั้งหมด</button>
+        <Icon name="chevron" size={12} />
+        <span>{job.id}</span>
+      </nav>
       <h2>{job.title}</h2>
       <span className={"status-tag " + job.status}>{labels[job.status]}</span>
-      <dl>
-        <dt>วันที่</dt>
-        <dd>{dateLabel(job.jobDate)}</dd>
-        <dt>แผนก</dt>
-        <dd>{job.department || "—"}</dd>
-        <dt>ผู้มอบหมาย</dt>
-        <dd>{job.person}</dd>
-        {job.requesterPhone && (
-          <>
-            <dt>เบอร์ติดต่อ</dt>
-            <dd>
-              <a href={"tel:" + job.requesterPhone}>{job.requesterPhone}</a>
-            </dd>
-          </>
-        )}
-        <dt>ผู้รับส่งเอกสาร</dt>
-        <dd>{job.messengerName || "—"}</dd>
-      </dl>
-      {job.status === "new" && (
-        <button
-          className="primary"
-          disabled={busy}
-          onClick={() => void run("accept")}
-        >
-          {busy ? <Loading label="กำลังบันทึก…" /> : "รับงาน"}
-        </button>
-      )}
-      <h3>จุดรับ–ส่ง</h3>
-      {job.stops.map((s, i) => (
-        <section className="management-stop" key={s.id}>
-          <small>
-            {i + 1} · {s.kind} ·{" "}
-            {s.status === "done"
-              ? "สำเร็จ"
-              : s.status === "retry"
-                ? "รอทำใหม่"
-                : "รอดำเนินการ"}
-          </small>
-          <b>{s.name}</b>
-          <p>{s.address}</p>
-          {s.contact && (
-            <p>
-              {s.contact} {s.phone && <a href={"tel:" + s.phone}>{s.phone}</a>}
-            </p>
-          )}
-          {s.note && <p>{s.note}</p>}
-        </section>
-      ))}
-      {job.returnReason && <p>เหตุผลคืนเอกสาร: {job.returnReason}</p>}
-      <h3>ประวัติ</h3>
-      <ol className="management-timeline">
-        {job.events?.map((e, i) => (
-          <li key={i}>
-            <p>{e.text}</p>
-            <small>{new Date(e.time).toLocaleString("th-TH")}</small>
-          </li>
+      <div className="ds-tabs" role="tablist" aria-label="ข้อมูลของงาน">
+        {[
+          ["details", "รายละเอียด"],
+          ["history", "ประวัติ"],
+        ].map(([id, label]) => (
+          <button
+            id={"tab-" + id}
+            role="tab"
+            key={id}
+            aria-selected={detailTab === id}
+            aria-controls={"panel-" + id}
+            onClick={() => setDetailTab(id)}
+            onKeyDown={(e) => {
+              if (["ArrowLeft", "ArrowRight"].includes(e.key)) {
+                e.preventDefault();
+                const next = id === "details" ? "history" : "details";
+                setDetailTab(next);
+                document.getElementById("tab-" + next)?.focus();
+              }
+            }}
+            tabIndex={detailTab === id ? 0 : -1}
+          >
+            {label}
+          </button>
         ))}
-      </ol>
+      </div>
+      <div
+        id="panel-details"
+        role="tabpanel"
+        aria-labelledby="tab-details"
+        hidden={detailTab !== "details"}
+      >
+        <dl>
+          <dt>วันที่</dt>
+          <dd>{dateLabel(job.jobDate)}</dd>
+          <dt>แผนก</dt>
+          <dd>{job.department || "—"}</dd>
+          <dt>ผู้มอบหมาย</dt>
+          <dd>{job.person}</dd>
+          {job.requesterPhone && (
+            <>
+              <dt>เบอร์ติดต่อ</dt>
+              <dd>
+                <a href={"tel:" + job.requesterPhone}>{job.requesterPhone}</a>
+              </dd>
+            </>
+          )}
+          <dt>ผู้รับส่งเอกสาร</dt>
+          <dd>{job.messengerName || "—"}</dd>
+        </dl>
+        {job.status === "new" && (
+          <button
+            className="primary"
+            disabled={busy}
+            onClick={() => void run("accept")}
+          >
+            {busy ? <Loading label="กำลังบันทึก…" /> : "รับงาน"}
+          </button>
+        )}
+        <h3>จุดรับ–ส่ง</h3>
+        {job.stops.map((s, i) => (
+          <section className="management-stop" key={s.id}>
+            <small>
+              {i + 1} · {s.kind} ·{" "}
+              {s.status === "done"
+                ? "สำเร็จ"
+                : s.status === "retry"
+                  ? "รอทำใหม่"
+                  : "รอดำเนินการ"}
+            </small>
+            <b>{s.name}</b>
+            <p>{s.address}</p>
+            {s.contact && (
+              <p>
+                {s.contact}{" "}
+                {s.phone && <a href={"tel:" + s.phone}>{s.phone}</a>}
+              </p>
+            )}
+            {s.note && <p>{s.note}</p>}
+          </section>
+        ))}
+        {job.returnReason && <p>เหตุผลคืนเอกสาร: {job.returnReason}</p>}
+      </div>
+      <div
+        id="panel-history"
+        role="tabpanel"
+        aria-labelledby="tab-history"
+        hidden={detailTab !== "history"}
+      >
+        <h3>ประวัติ</h3>
+        {!job.events?.length && <EmptyState title="ยังไม่มีประวัติ" />}
+        <ol className="management-timeline">
+          {job.events?.map((e, i) => (
+            <li key={i}>
+              <p>{e.text}</p>
+              <small>{new Date(e.time).toLocaleString("th-TH")}</small>
+            </li>
+          ))}
+        </ol>
+      </div>
     </aside>
   );
 }

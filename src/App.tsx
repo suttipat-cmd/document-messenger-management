@@ -1,3 +1,6 @@
+import Dialog from "./ui/Dialog";
+import Icon from "./ui/Icon";
+import { EmptyState } from "./ui/Feedback";
 import { dateLabel } from "./lib/dates";
 import { useState } from "react";
 import type { Action, Profile } from "./lib/workspace";
@@ -113,18 +116,7 @@ const labels = {
   returning: "รอคืนเอกสาร",
   done: "เสร็จสิ้น",
 };
-const icon = (name: string) => (
-  <span aria-hidden="true">
-    {
-      (
-        { jobs: "▤", stops: "⌖", history: "◷", account: "○" } as Record<
-          string,
-          string
-        >
-      )[name]
-    }
-  </span>
-);
+const icon = (name: string) => <Icon name={name} />;
 export type RemoteWorkspace = {
   jobs: Job[];
   order: string[];
@@ -156,6 +148,8 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
   const [lastJob, setLastJob] = useState<string>("MSG-0261");
   const [historyFilter, setHistoryFilter] = useState("all");
   const [clock, setClock] = useState(() => Date.now());
+  const [actions, setActions] = useState(false);
+  const [returnConfirmation, setReturnConfirmation] = useState(false);
   const [notice, setNotice] = useState("");
   const [note, setNote] = useState("");
   const job = jobs.find((j) => j.id === selected);
@@ -205,10 +199,12 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
       await remote.onCommand(j, action, st, reason);
       setStopId(undefined);
       setNote("");
-      setNotice("บันทึกข้อมูลแล้ว");
+
       window.scrollTo({ top: 0, behavior: "instant" });
+      return true;
     } catch {
       setNotice("ยังยืนยันผลไม่ได้ กรุณาตรวจข้อความการเชื่อมต่อแล้วโหลดใหม่");
+      return false;
     }
   };
   const accept = (j: Job) => {
@@ -317,7 +313,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           className={
             "status " +
             (st.status === "retry"
-              ? "returning"
+              ? "retry"
               : st.status === "done"
                 ? "done"
                 : "active")
@@ -540,7 +536,9 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             บริหารงานบริการ<small>งานของฉัน</small>
           </span>
         </a>
-        <span className="avatar">น</span>
+        <span className="avatar">
+          {remote?.profile.display_name.charAt(0) || "น"}
+        </span>
       </header>
       {!remote && <div className="demo">ข้อมูลตัวอย่าง</div>}
       <fieldset className="workspace-body" disabled={!!remote?.saving}>
@@ -549,7 +547,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             <div role="status" className="notice">
               {notice}
               <button aria-label="ปิดข้อความ" onClick={() => setNotice("")}>
-                ×
+                <Icon name="close" size={16} />
               </button>
             </div>
           )}
@@ -601,19 +599,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                   <button
                     className="primary"
                     disabled={!!remote?.saving}
-                    onClick={() => {
-                      if (remote) {
-                        void runRemote(job, "confirm_return");
-                        return;
-                      }
-                      update(job.id, {
-                        status: "done",
-                        returned: true,
-                        completedAt: new Date().toISOString(),
-                        events: record(job, "คืนเอกสารให้ผู้มอบหมายสำเร็จ"),
-                      });
-                      setNotice("ยืนยันคืนเอกสารแล้ว งานเสร็จสิ้น");
-                    }}
+                    onClick={() => setReturnConfirmation(true)}
                   >
                     ยืนยันคืนเอกสารและปิดงาน
                   </button>
@@ -663,10 +649,22 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       >
                         ยืนยันดำเนินการสำเร็จ ✓
                       </button>
-                      <button className="secondary" onClick={retry}>
+                      <button
+                        className="secondary mobile-action-trigger"
+                        onClick={() => setActions(true)}
+                      >
+                        <Icon name="more" /> ตัวเลือกเพิ่มเติม
+                      </button>
+                      <button
+                        className="secondary stop-secondary-action"
+                        onClick={retry}
+                      >
                         เก็บไว้กลับมาทำใหม่
                       </button>
-                      <button className="text-danger" onClick={returnJob}>
+                      <button
+                        className="text-danger stop-secondary-action"
+                        onClick={returnJob}
+                      >
                         นำเอกสารกลับคืนผู้มอบหมาย
                       </button>
                     </>
@@ -979,7 +977,9 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
               <span className="eyebrow">พื้นที่ทำงาน</span>
               <h1>บัญชีของฉัน</h1>
               <section className="panel">
-                <span className="avatar big">น</span>
+                <span className="avatar big">
+                  {remote?.profile.display_name.charAt(0) || "น"}
+                </span>
                 <h2>
                   {remote
                     ? `${remote.profile.display_name} · ${{ admin: "ผู้ดูแลระบบ", super_user: "ผู้จัดการงาน", messenger: "ผู้รับส่งเอกสาร" }[remote.profile.role]}`
@@ -1031,6 +1031,76 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           )}
         </main>
       </fieldset>
+      {actions && stop && (
+        <Dialog
+          title="ตัวเลือกของจุดนี้"
+          sheet
+          busy={!!remote?.saving}
+          onClose={() => setActions(false)}
+        >
+          <p>{stop.name}</p>
+          <div className="sheet-actions">
+            <button
+              onClick={() => {
+                setActions(false);
+                retry();
+              }}
+            >
+              เก็บไว้กลับมาทำใหม่
+            </button>
+            <button
+              onClick={() => {
+                setActions(false);
+                returnJob();
+              }}
+            >
+              นำเอกสารกลับคืนผู้มอบหมาย
+            </button>
+          </div>
+        </Dialog>
+      )}
+      {returnConfirmation && job && (
+        <Dialog
+          title="ยืนยันการคืนเอกสารจริง"
+          busy={!!remote?.saving}
+          onClose={() => setReturnConfirmation(false)}
+        >
+          <p>
+            คืนเอกสารให้ {job.person} เรียบร้อยแล้วใช่หรือไม่? เมื่อยืนยัน
+            งานจะถูกปิด
+          </p>
+          <div className="dialog-actions">
+            <button
+              className="secondary"
+              disabled={!!remote?.saving}
+              onClick={() => setReturnConfirmation(false)}
+            >
+              ยกเลิก
+            </button>
+            <button
+              className="primary"
+              disabled={!!remote?.saving}
+              onClick={async () => {
+                if (remote) {
+                  if (await runRemote(job, "confirm_return"))
+                    setReturnConfirmation(false);
+                } else {
+                  update(job.id, {
+                    status: "done",
+                    returned: true,
+                    completedAt: new Date().toISOString(),
+                    events: record(job, "คืนเอกสารให้ผู้มอบหมายสำเร็จ"),
+                  });
+                  setNotice("ยืนยันคืนเอกสารแล้ว งานเสร็จสิ้น");
+                  setReturnConfirmation(false);
+                }
+              }}
+            >
+              ยืนยันคืนเอกสารแล้ว
+            </button>
+          </div>
+        </Dialog>
+      )}
       <nav className="bottom" aria-label="เมนูหลัก">
         {(["jobs", "stops", "history", "account"] as Tab[]).map((t, i) => (
           <button
@@ -1052,16 +1122,12 @@ function Photo() {
   return (
     <div className="photo-box">
       <button className="camera" disabled>
-        <span aria-hidden="true">◎</span>แนบรูปหลักฐาน
+        <Icon name="camera" />
+        แนบรูปหลักฐาน
       </button>
     </div>
   );
 }
 function Empty({ text }: { text: string }) {
-  return (
-    <section className="empty">
-      <span aria-hidden="true">✓</span>
-      <p>{text}</p>
-    </section>
-  );
+  return <EmptyState title={text} />;
 }

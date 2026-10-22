@@ -108,6 +108,7 @@ describe("Messenger Phase 1", () => {
     await u.click(
       screen.getByRole("button", { name: "ยืนยันคืนเอกสารและปิดงาน" }),
     );
+    await u.click(screen.getByRole("button", { name: "ยืนยันคืนเอกสารแล้ว" }));
     expect(screen.getByText(/คืนเอกสารให้ผู้มอบหมายสำเร็จ/)).toBeTruthy();
     await u.click(screen.getByRole("button", { name: "ดูหลักฐาน" }));
     expect(
@@ -173,4 +174,19 @@ describe("Messenger Phase 1", () => {
       screen.queryByRole("heading", { name: "✓ งานเสร็จสิ้น" }),
     ).toBeNull();
   });
+});
+it("opens the mobile action sheet and preserves the reason requirement", async () => {
+  const u = userEvent.setup();
+  vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  render(<App />);
+  await u.click(
+    within(findJob("MSG-0261")).getByRole("button", { name: "ทำต่อ →" }),
+  );
+  await u.click(screen.getByRole("button", { name: "ตัวเลือกเพิ่มเติม" }));
+  const dialog = screen.getByRole("dialog");
+  await u.click(
+    within(dialog).getByRole("button", { name: "เก็บไว้กลับมาทำใหม่" }),
+  );
+  expect(screen.getByRole("status").textContent).toContain("ระบุเหตุผล");
+  expect(screen.queryByRole("dialog")).toBeNull();
 });

@@ -1,3 +1,5 @@
+import ValidatedForm from "./ui/ValidatedForm";
+import { Alert, Steps } from "./ui/Feedback";
 import Required from "./Required";
 import departments from "./data/departments.json";
 import { today, dateLabel } from "./lib/dates";
@@ -124,6 +126,7 @@ export default function PublicRequest() {
         <a href="#/">เข้าสู่ระบบ</a>
       </header>
       <main className="public-main">
+        <Steps current={receipt ? 2 : review ? 1 : 0} />
         {receipt ? (
           <section className="receipt">
             <span className="receipt-check">✓</span>
@@ -142,11 +145,7 @@ export default function PublicRequest() {
           <>
             <span className="eyebrow">ไม่ต้องสมัครสมาชิก</span>
             <h1>{review ? "ตรวจสอบก่อนส่ง" : "แบบฟอร์มมอบหมายงาน"}</h1>
-            {error && (
-              <div className="public-error" role="alert">
-                {error}
-              </div>
-            )}
+            {error && <Alert tone="danger">{error}</Alert>}
             {review ? (
               <>
                 <section className="panel">
@@ -211,7 +210,11 @@ export default function PublicRequest() {
                 </button>
               </>
             ) : (
-              <form
+              <ValidatedForm
+                onInput={(e) => {
+                  const field = e.target as HTMLInputElement;
+                  if (field.validity?.valid) setError("");
+                }}
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (
@@ -449,7 +452,7 @@ export default function PublicRequest() {
                 >
                   ตรวจสอบก่อนส่ง →
                 </button>
-              </form>
+              </ValidatedForm>
             )}
           </>
         )}
