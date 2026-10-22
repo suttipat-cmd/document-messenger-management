@@ -764,7 +764,7 @@ main {
 }
 .reason,
 .return-warning {
-  font-size: 12px !important;
+  font-size: var(--text-body, 14px);
   color: #976439 !important;
   background: #fff6e9;
   border-radius: 8px;
@@ -1827,7 +1827,7 @@ main {
   color: #d53939 !important;
   font-weight: 700;
   margin-left: 2px;
-  font-size: 13px !important;
+  font-size: var(--text-body, 14px);
 }
 .management-row {
   grid-template-columns:

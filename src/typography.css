@@ -1,0 +1,141 @@
+/* Shared typography scale. Semantic sizes stay consistent across roles. */
+:root {
+  --font-family: "Noto Sans Thai", system-ui, sans-serif;
+  --text-caption: 12px;
+  --text-body: 14px;
+  --text-input: 14px;
+  --text-card-title: 16px;
+  --text-section-title: 18px;
+  --text-page-title: 24px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-heading: 600;
+  font-family: var(--font-family);
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+body, button, input, select, textarea {
+  font-family: var(--font-family);
+}
+button, input, select, textarea {
+  font-size: var(--text-input);
+  line-height: 1.5;
+}
+h1, .management-topbar h1, .public-main h1, .auth-shell h1 {
+  font-size: var(--text-page-title);
+  font-weight: var(--weight-heading);
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+.public-main h2, h2, .management-detail h2, .ds-dialog h2, .panel h2 {
+  font-size: var(--text-section-title);
+  font-weight: var(--weight-heading);
+  line-height: 1.5;
+}
+h3, .task h3, .stop-heading h3, .management-detail h3, .ds-empty h3 {
+  font-size: var(--text-card-title);
+  font-weight: var(--weight-heading);
+  line-height: 1.6;
+}
+p, .subtitle, .hint, .contact, .stop-heading p, .timeline li,
+.management-stop p, .management-timeline p, .review-data,
+.management-detail dl, .ds-dialog p, .ds-alert, .public-error,
+.auth-message, .history-select, .ds-empty p {
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+/* Table values are peers: numbers, names, codes and progress use 14px. */
+.management-row, .management-row.table-heading,
+.management-row b, .management-row small, .management-row .code,
+.management-row .ordinal, .management-row .job-title,
+.management-row .status-tag, .management-row .status-tag b,
+.ds-pagination, .ds-pagination button, .ds-pagination select {
+  font-size: var(--text-body);
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+.management-row, .management-row.table-heading, .ds-pagination {
+  font-weight: var(--weight-regular);
+}
+.management-row .code {
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+.management-row b {
+  font-weight: var(--weight-heading);
+}
+.management-row .status-tag {
+  font-weight: var(--weight-medium);
+  white-space: normal;
+  max-width: 100%;
+}
+.management-row progress {
+  max-width: 100%;
+}
+.field, .management-users .field, .public-main .field,
+.management-date-filters label, .active-check, .management-users .active-check,
+.management-users .code, .management-sidebar nav button,
+.management-account, .management-account button,
+.management-stats span, .filter-count,
+.filter-quick, .filter-clear, .ds-chip, .ds-tabs button,
+.primary, .secondary, .form-link, .mode-button, .back,
+.management-actions .primary, .management-actions .secondary,
+.route-actions > *, .ds-dialog button.primary, .ds-dialog button.secondary,
+.optional-contact summary, .public-entry {
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+input:not([type="checkbox"]):not([type="radio"]),
+.field input, .field select, .field textarea,
+.management-toolbar input, .management-toolbar select,
+.management-date-filters input, .app .search input,
+.public-main input, .public-main select, .public-main textarea,
+.management-shell input:not([type=checkbox]):not([type=radio]),
+.management-shell select {
+  font-size: var(--text-input);
+  font-weight: var(--weight-regular);
+  line-height: 1.5;
+}
+small, .eyebrow, .public-main .eyebrow, .greeting, .demo, .code, .job-date,
+.account-ordinal, .account-ordinal small,
+.management-account small, .management-stop small,
+.management-timeline small, .timeline time, .field-error,
+.ds-steps, .ds-breadcrumb, .ds-tooltip::after,
+.bottom button, .brand small, .stat span, .resume small,
+.filters button, .filters button small, .task .foot,
+.camera, .connection-dot, .mode-strip, .save-indicator {
+  font-size: var(--text-caption);
+  line-height: 1.6;
+  letter-spacing: 0;
+}
+.status, .pill, .status-tag, .section-title span,
+.task .meta, .task .reason, .return-warning, .route-card .contact {
+  font-size: var(--text-body);
+  line-height: 1.6;
+}
+.brand, .management-brand b, .public-header b {
+  font-size: var(--text-card-title);
+  line-height: 1.5;
+}
+@media (max-width: 800px) {
+  :root { --text-input: 16px; }
+  .brand small { font-size: var(--text-caption); }
+  .bottom button { font-size: var(--text-caption); }
+  .management-row > span[data-label]::before {
+    font-size: var(--text-caption);
+    line-height: 1.6;
+  }
+  .ds-toast .ds-alert { font-size: var(--text-body); }
+}
+.management-users .code {
+  font-weight: var(--weight-regular);
+  letter-spacing: 0;
+}
+.management-users .active-check {
+  white-space: nowrap;
+}
+@media (min-width: 1201px) {
+  .management-users .profile-editor fieldset {
+    grid-template-columns: 40px minmax(160px, 1.2fr) minmax(160px, 1fr) 160px 126px 80px;
+  }
+}
