@@ -1236,3 +1236,100 @@ textarea[aria-invalid="true"],
   background: var(--primary-soft);
   color: var(--primary-pressed);
 }
+
+/* Keep filter controls and their summary inside one padded region. */
+.management-filters {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.management-filters .management-toolbar,
+.management-filters .management-date-filters,
+.management-filters .ds-chips {
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.management-filters .filter-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 6px;
+}
+.management-toolbar > *,
+.management-date-filters > *,
+.management-users .profile-editor fieldset > *,
+.public-fields > *,
+.ds-dialog header > h2 {
+  min-width: 0;
+}
+.ds-chip {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.ds-chip .ds-tooltip,
+.ds-dialog header > button,
+.ds-alert > .ds-icon,
+.management-detail header > button {
+  flex-shrink: 0;
+}
+.management-detail h2,
+.management-stop,
+.management-timeline,
+.profile-editor .code,
+.ds-dialog p,
+.ds-dialog h2,
+.task h3,
+.stop-main h3,
+.review-data dd {
+  overflow-wrap: anywhere;
+}
+.management-detail header {
+  gap: 12px;
+}
+.ds-dialog .dialog-actions {
+  flex-wrap: wrap;
+}
+.field-error {
+  display: block;
+  line-height: 1.6;
+}
+@media (max-width: 800px) {
+  .management-filters {
+    padding: 12px;
+  }
+  .management-date-filters label {
+    flex-basis: calc(50% - 6px);
+  }
+  .ds-dialog .dialog-actions > button {
+    flex: 1 1 120px;
+  }
+}
+/* Account fields must not auto-place into the narrow ordinal column. */
+@media (min-width: 601px) and (max-width: 1200px) {
+  .management-users .profile-editor fieldset {
+    grid-template-columns: 40px repeat(2, minmax(0, 1fr));
+  }
+  .management-users .profile-editor .field {
+    grid-column: 2;
+  }
+  .management-users .profile-editor .field + .field {
+    grid-column: 3;
+  }
+  .management-users .profile-editor .active-check {
+    grid-column: 2;
+  }
+  .management-users .profile-editor fieldset > button {
+    grid-column: 3;
+    justify-self: start;
+  }
+}
+@media (max-width: 800px) {
+  .management-account {
+    flex-wrap: wrap;
+  }
+  .management-account b {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+}

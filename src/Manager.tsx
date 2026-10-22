@@ -140,18 +140,6 @@ export default function Manager({
           },
         ]
       : []),
-    ...(from
-      ? [
-          {
-            id: "from",
-            label: "ตั้งแต่ " + dateLabel(from),
-            clear: () => setFrom(""),
-          },
-        ]
-      : []),
-    ...(to
-      ? [{ id: "to", label: "ถึง " + dateLabel(to), clear: () => setTo("") }]
-      : []),
   ];
   const job = snapshot.jobs.find((j) => j.id === selected);
   return (
@@ -233,119 +221,121 @@ export default function Manager({
               ))}
             </div>
             <section className="management-list">
-              <div className="management-toolbar">
-                <input
-                  aria-label="ค้นหางาน"
-                  placeholder="ค้นหาเลขงาน ชื่องาน ผู้มอบหมาย…"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-                <select
-                  aria-label="สถานะงาน"
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  <option value="all">ทุกสถานะ</option>
-                  {Object.entries(labels).map(([s, l]) => (
-                    <option key={s} value={s}>
-                      {l}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label="แผนก"
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                >
-                  <option value="all">ทุกแผนก</option>
-                  {departments.map((d) => (
-                    <option key={d || "__blank"} value={d || "__blank"}>
-                      {d || "ไม่ระบุแผนก"}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  aria-label="ผู้รับงาน"
-                  value={messenger}
-                  onChange={(e) => setMessenger(e.target.value)}
-                >
-                  <option value="all">ผู้รับงานทั้งหมด</option>
-                  {messengers.map(([id, name]) => (
-                    <option key={id || "__blank"} value={id || "__blank"}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="management-date-filters">
-                <label>
-                  ตั้งแต่วันที่
+              <div className="management-filters">
+                <div className="management-toolbar">
                   <input
-                    type="date"
-                    aria-label="ตั้งแต่วันที่"
-                    min="0001-01-01"
-                    max="9999-12-31"
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
+                    aria-label="ค้นหางาน"
+                    placeholder="ค้นหาเลขงาน ชื่องาน ผู้มอบหมาย…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
                   />
-                </label>
-                <label>
-                  ถึงวันที่
-                  <input
-                    type="date"
-                    aria-label="ถึงวันที่"
-                    min={from || "0001-01-01"}
-                    max="9999-12-31"
-                    value={to}
-                    onChange={(e) => setTo(e.target.value)}
-                  />
-                </label>
-                <button
-                  className="filter-quick"
-                  onClick={() => {
-                    const d = today();
-                    setFrom(d);
-                    setTo(d);
-                  }}
-                >
-                  วันนี้
-                </button>
-                {filtered && (
-                  <button className="filter-clear" onClick={resetFilters}>
-                    ล้างตัวกรอง
-                  </button>
-                )}
-                <span className="filter-count" role="status">
-                  {filtered
-                    ? `${jobs.length} จาก ${snapshot.jobs.length} งาน`
-                    : `${jobs.length} งาน`}
-                </span>
-              </div>
-              {chips.length > 0 && (
-                <div className="ds-chips" aria-label="ตัวกรองที่เลือก">
-                  {chips.map((c) => (
-                    <span className="ds-chip" key={c.id}>
-                      {c.label}
-                      <span
-                        className="ds-tooltip"
-                        data-tooltip={"ลบ " + c.label}
-                      >
-                        <button
-                          aria-label={"ลบตัวกรอง " + c.label}
-                          onClick={c.clear}
-                        >
-                          <Icon name="close" size={14} />
-                        </button>
-                      </span>
-                    </span>
-                  ))}
+                  <select
+                    aria-label="สถานะงาน"
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                  >
+                    <option value="all">ทุกสถานะ</option>
+                    {Object.entries(labels).map(([s, l]) => (
+                      <option key={s} value={s}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="แผนก"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  >
+                    <option value="all">ทุกแผนก</option>
+                    {departments.map((d) => (
+                      <option key={d || "__blank"} value={d || "__blank"}>
+                        {d || "ไม่ระบุแผนก"}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="ผู้รับงาน"
+                    value={messenger}
+                    onChange={(e) => setMessenger(e.target.value)}
+                  >
+                    <option value="all">ผู้รับงานทั้งหมด</option>
+                    {messengers.map(([id, name]) => (
+                      <option key={id || "__blank"} value={id || "__blank"}>
+                        {name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              )}
-              {invalidDates && (
-                <p className="filter-error" role="alert">
-                  วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
-                </p>
-              )}
+                <div className="management-date-filters">
+                  <label>
+                    ตั้งแต่วันที่
+                    <input
+                      type="date"
+                      aria-label="ตั้งแต่วันที่"
+                      min="0001-01-01"
+                      max="9999-12-31"
+                      value={from}
+                      onChange={(e) => setFrom(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    ถึงวันที่
+                    <input
+                      type="date"
+                      aria-label="ถึงวันที่"
+                      min={from || "0001-01-01"}
+                      max="9999-12-31"
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                    />
+                  </label>
+                  <button
+                    className="filter-quick"
+                    onClick={() => {
+                      const d = today();
+                      setFrom(d);
+                      setTo(d);
+                    }}
+                  >
+                    วันนี้
+                  </button>
+                  {filtered && (
+                    <button className="filter-clear" onClick={resetFilters}>
+                      ล้างตัวกรอง
+                    </button>
+                  )}
+                  <span className="filter-count" role="status">
+                    {filtered
+                      ? `${jobs.length} จาก ${snapshot.jobs.length} งาน`
+                      : `${jobs.length} งาน`}
+                  </span>
+                </div>
+                {chips.length > 0 && (
+                  <div className="ds-chips" aria-label="ตัวกรองที่เลือก">
+                    {chips.map((c) => (
+                      <span className="ds-chip" key={c.id}>
+                        {c.label}
+                        <span
+                          className="ds-tooltip"
+                          data-tooltip={"ลบ " + c.label}
+                        >
+                          <button
+                            aria-label={"ลบตัวกรอง " + c.label}
+                            onClick={c.clear}
+                          >
+                            <Icon name="close" size={14} />
+                          </button>
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {invalidDates && (
+                  <p className="filter-error" role="alert">
+                    วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
+                  </p>
+                )}
+              </div>
               <div
                 className="management-table"
                 role="table"
