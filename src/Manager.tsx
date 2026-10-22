@@ -1,3 +1,4 @@
+import EvidencePanel from "./ui/EvidenceBoundary";
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Job } from "./App";
@@ -611,9 +612,24 @@ function JobPanel({
               </p>
             )}
             {s.note && <p>{s.note}</p>}
+            {job.dbId && (
+              <EvidencePanel
+                key={s.id}
+                revision={job.events?.length}
+                jobId={job.dbId}
+                stopId={s.id}
+              />
+            )}
           </section>
         ))}
         {job.returnReason && <p>เหตุผลคืนเอกสาร: {job.returnReason}</p>}
+        {job.dbId && (job.returned || job.status === "returning") && (
+          <EvidencePanel
+            revision={job.events?.length}
+            jobId={job.dbId}
+            purpose="return"
+          />
+        )}
       </div>
       <div
         id="panel-history"

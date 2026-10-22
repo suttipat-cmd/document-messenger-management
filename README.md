@@ -23,7 +23,7 @@ Local URL: http://127.0.0.1:5173/document-messenger-management/
 
 Supabase Auth, RLS, persistent jobs/stops/route order, server-generated event history, optimistic version checks and Realtime are connected. Data loading is paginated and refreshes on window focus. Mutations wait for the backend; errors never substitute demo jobs or invent success. Realtime notifications are batched to reduce duplicate fetches.
 
-**Photo evidence is optional in this phase and attachment is disabled.** The UI reserves a clearly labelled placeholder. No files are uploaded or stored. Physical return still requires an explicit confirmation before the job closes. Google Workspace Drive integration and mandatory photos are a later phase.
+Photo evidence is optional and now supported through the authenticated Supabase Edge Function → signed Apps Script → Google Drive bridge. Messenger can capture/select up to five images per stop and per physical return. Physical return still requires explicit confirmation.
 
 Demo mode is an explicit separate choice on the login screen. Demo changes are memory-only and do not create backend data.
 
@@ -70,7 +70,7 @@ RPCs: `messenger_command`, `messenger_reorder`, `messenger_create_job`, `messeng
 
 ## Architecture constraints
 
-GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Drive integration remains deferred; photo UI stays disabled.
+GitHub Pages hosts the frontend only. Supabase Free provides PostgreSQL, Auth, RLS, Realtime and Edge Functions. All future documents and evidence photos belong in Google Workspace Drive, accessed through authorized backend endpoints. Do not add Supabase Storage or another hosting/storage provider for those files. Apps Script is the approved Google integration bridge, running as its owner with a fixed destination folder. Files never pass through Supabase Storage.
 
 ## GitHub Pages
 
@@ -113,6 +113,21 @@ Applied components include buttons and states, fields/dropdowns with Thai inline
 
 Management pagination renders 10/20/50 filtered jobs per page with continuous row ordinals and resets to page one when filters change. It operates on the existing authorized workspace snapshot; it does not change database pagination or RLS. Job detail tabs support arrow-key navigation. Filter chips can be removed individually. Empty states distinguish no jobs from no matches and offer the relevant next action.
 
-A native modal confirmation is required in the UI before role/activation changes and before final physical-return confirmation. The former shows the target account and intended values; pending dialogs block cancellation. These UI confirmations do not replace backend authorization. Mobile Messenger uses a bottom action sheet for retry/return, retaining reason validation and existing job rules. Google Drive and photo capture remain deferred and disabled.
+A native modal confirmation is required in the UI before role/activation changes and before final physical-return confirmation. The former shows the target account and intended values; pending dialogs block cancellation. These UI confirmations do not replace backend authorization. Mobile Messenger uses a bottom action sheet for retry/return, retaining reason validation and existing job rules. Google Drive evidence capture is enabled through the protected bridge.
 
 Public submission is code-split with a skeleton fallback. Form validation keeps native validity rules, adds Thai inline messages/ARIA errors and focuses the first invalid control without browser-language popovers. Success toasts follow confirmed operations and refreshed data; errors remain persistent. Shared feedback tests cover validation, confirmation/cancel, toast timing and pagination. Browser review covers desktop, form error states, native modal focus, and Messenger at 360/390px using disposable local previews.
+
+
+## Google Drive evidence
+
+- Destination: `11Iyc7T1iJdhRzUOmow_rIUx8bvu8om1O` in the company account’s My Drive.
+- Deploy `supabase/functions/messenger-evidence/index.ts` with JWT verification enabled. The handler additionally verifies the actual user with Supabase Auth and database-owned roles. API keys alone never authorize access.
+- Set `DRIVE_BRIDGE_SECRET` in Supabase Secrets to the Apps Script `BRIDGE_SECRET`. Never place it in source, a Vite variable, logs, or chat. Apps Script code/setup is in `integrations/apps-script/`.
+- Apps Script executes as its owner; its Web app accepts signed backend POSTs only. Requests expire after two minutes, nonces discourage replay, responses are also signed, and reads are restricted to the fixed folder and recorded image hash. No public file URLs or permissions are created.
+- Original images up to 20 MiB/48 megapixels are decoded on the device, resized to at most 1600px on the long edge, and encoded as JPEG (white background, quality 0.85). Re-encoding strips original EXIF metadata. Only the resized image is sent; final file size is limited to 2 MiB. Unsupported formats such as HEIC on browsers without a decoder show an error.
+- Public `messenger_evidence` contains metadata only, protected with job-level RLS. Private upload reservations store Drive IDs and SHA-256 digests. Only service-role RPCs can publish metadata; only the assigned active Messenger can upload to an unfinished stop or a returning job. Managers have read-only access after acceptance. Anonymous requesters cannot upload or read photos.
+- Stable IDs derived from the prepared image and target make retries idempotent. The frontend retains the prepared Blob for retry after uncertain results. Upload and completion remain separate actions; wait for upload success before completing a stop.
+- A cross-device job transition after Drive upload can prevent metadata publication; the file then remains a private orphan with its reservation for administrative reconciliation. Pending reservations count toward the five-image cap. Deletion/replacement and automated orphan cleanup are not implemented. Existing photos are append-only through the app.
+- Viewing/downloading fetches bytes through the authenticated Edge Function, rechecks RLS before delivering them, and uses temporary browser Blob URLs that are revoked on close. No Google access token, shared secret, or Drive file ID is returned to the frontend.
+- Verification: `npm test`, `npm run lint`, `npm run build`; `npx deno check supabase/functions/messenger-evidence/index.ts`; `npx deno test --allow-env supabase/functions/messenger-evidence/index_test.ts`; and the rolled-back database test `supabase/tests/drive_evidence.sql`.
+- Apps Script availability and quotas apply. Physical phone camera capture still needs device acceptance testing. Existing photos are not made mandatory by this feature.

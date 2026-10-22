@@ -1,4 +1,5 @@
 import Dialog from "./ui/Dialog";
+import EvidencePanel from "./ui/EvidenceBoundary";
 import Icon from "./ui/Icon";
 import { EmptyState } from "./ui/Feedback";
 import { dateLabel } from "./lib/dates";
@@ -153,6 +154,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
   const [returnConfirmation, setReturnConfirmation] = useState(false);
   const [notice, setNotice] = useState("");
   const [note, setNote] = useState("");
+  const [evidenceBusy, setEvidenceBusy] = useState(false);
   const job = jobs.find((j) => j.id === selected);
   const stop = job?.stops.find((s) => s.id === stopId);
   const active = jobs.filter((j) => j.status !== "done");
@@ -545,7 +547,10 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         </span>
       </header>
       {!remote && <div className="demo">ข้อมูลตัวอย่าง</div>}
-      <fieldset className="workspace-body" disabled={!!remote?.saving}>
+      <fieldset
+        className="workspace-body"
+        disabled={!!remote?.saving || evidenceBusy}
+      >
         <main>
           {notice && (
             <div role="status" className="notice">
@@ -558,7 +563,8 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           {job ? (
             <>
               <button className="back" onClick={back}>
-                ← {stop
+                ←{" "}
+                {stop
                   ? stopOrigin === "details"
                     ? "กลับรายละเอียดงาน"
                     : tab === "stops"
@@ -605,10 +611,17 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     แล้วยืนยันการส่งคืนเอกสารจริง
                   </p>
                   <p>เหตุผล: {job.returnReason}</p>
-                  <Photo />
+                  <EvidencePanel
+                    key={job.id + "-return"}
+                    revision={job.events?.length}
+                    jobId={remote ? job.dbId : undefined}
+                    purpose="return"
+                    editable
+                    onBusy={setEvidenceBusy}
+                  />
                   <button
                     className="primary"
-                    disabled={!!remote?.saving}
+                    disabled={!!remote?.saving || evidenceBusy}
                     onClick={() => setReturnConfirmation(true)}
                   >
                     ยืนยันคืนเอกสารและปิดงาน
@@ -622,6 +635,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       ? "ดำเนินการเรียบร้อย"
                       : "หลักฐานการดำเนินการ"}
                   </h2>
+                  <EvidencePanel
+                    key={job.id + stop.id}
+                    revision={job.events?.length}
+                    jobId={remote ? job.dbId : undefined}
+                    stopId={stop.id}
+                    editable={job.status === "active" && stop.status !== "done"}
+                    onBusy={setEvidenceBusy}
+                  />
                   {stop.status === "done" || job.status === "done" ? (
                     <>
                       {stop.photo ? (
@@ -642,7 +663,6 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     </>
                   ) : (
                     <>
-                      <Photo />
                       <label className="field">
                         หมายเหตุ / เหตุผลที่ทำไม่สำเร็จ
                         <textarea
@@ -654,7 +674,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       </label>
                       <button
                         className="primary"
-                        disabled={!!remote?.saving}
+                        disabled={!!remote?.saving || evidenceBusy}
                         onClick={completeStop}
                       >
                         ยืนยันดำเนินการสำเร็จ ✓
@@ -734,6 +754,13 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                           ? "คืนเอกสารให้ผู้มอบหมายเรียบร้อยแล้ว"
                           : "ดำเนินการครบทุกจุดแล้ว"}
                       </p>
+                      {job.returned && (
+                        <EvidencePanel
+                          revision={job.events?.length}
+                          jobId={remote ? job.dbId : undefined}
+                          purpose="return"
+                        />
+                      )}
                       {job.returnPhoto && (
                         <img
                           className="preview"
@@ -1082,14 +1109,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           <div className="dialog-actions">
             <button
               className="secondary"
-              disabled={!!remote?.saving}
+              disabled={!!remote?.saving || evidenceBusy}
               onClick={() => setReturnConfirmation(false)}
             >
               ยกเลิก
             </button>
             <button
               className="primary"
-              disabled={!!remote?.saving}
+              disabled={!!remote?.saving || evidenceBusy}
               onClick={async () => {
                 if (remote) {
                   if (await runRemote(job, "confirm_return"))
@@ -1115,7 +1142,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         {(["jobs", "stops", "history", "account"] as Tab[]).map((t, i) => (
           <button
             key={t}
-            disabled={!!remote?.saving}
+            disabled={!!remote?.saving || evidenceBusy}
             className={tab === t ? "current" : ""}
             aria-current={tab === t ? "page" : undefined}
             onClick={() => navigate(t)}
@@ -1125,16 +1152,6 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           </button>
         ))}
       </nav>
-    </div>
-  );
-}
-function Photo() {
-  return (
-    <div className="photo-box">
-      <button className="camera" disabled>
-        <Icon name="camera" />
-        แนบรูปหลักฐาน
-      </button>
     </div>
   );
 }

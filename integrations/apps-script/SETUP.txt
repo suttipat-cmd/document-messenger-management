@@ -1,0 +1,31 @@
+การติดตั้ง Google Drive Bridge
+
+1. สร้างโครงการ Apps Script และวาง Code.gs แทนโค้ดเริ่มต้น
+2. ตั้งชื่อ เช่น Service Management - Drive Bridge
+3. ใน Project Settings เปิด Show appsscript.json manifest file แล้วแทนเนื้อหาด้วย appsscript.json ที่แนบ
+4. เลือกฟังก์ชัน initializeBridge แล้วกด Run ด้วยบัญชีที่มีสิทธิ์เพิ่มไฟล์ในโฟลเดอร์ document-messenger-management และอนุญาต Google Drive ด้วยตัวเอง
+5. ใน Project Settings > Script Properties จะมี DRIVE_FOLDER_ID และ BRIDGE_SECRET ให้เก็บค่า BRIDGE_SECRET ไว้ อย่าส่งในแชตหรือใส่ Frontend
+6. Deploy > New deployment > Web app
+   Execute as: Me
+   Who has access: Anyone (หากองค์กรไม่อนุญาตตัวเลือกนี้ ให้แจ้ง ไม่ต้องลดนโยบายองค์กร)
+7. Deploy แล้วส่งเฉพาะ Web app URL ที่ลงท้าย /exec กลับมา ไม่ใช้ /dev
+8. ขั้นต่อไปจะตั้ง URL และ BRIDGE_SECRET ใน Supabase Edge Function Secrets โดยตรง ให้ทั้งสองฝั่งใช้ secret ค่าเดียวกัน
+
+ห้ามเปิดโฟลเดอร์หรือไฟล์เป็น Anyone with the link โค้ดนี้ไม่สร้าง public link
+Web app รับเฉพาะ POST ที่ลงนาม HMAC-SHA256 จาก Backend เท่านั้น
+ทดสอบเปิด /exec ในเบราว์เซอร์จะเห็น POST_REQUIRED ซึ่งเป็นพฤติกรรมปกติ
+รองรับภาพ JPEG / PNG / WebP สูงสุด 2 MiB ต่อภาพ ระบบ Frontend จะย่อภาพก่อนส่ง
+การกด Run ของ doPost โดยตรงไม่ใช่การทดสอบอัปโหลด ต้องส่งคำขอที่ลงนามจาก Backend
+หลังแก้โค้ด ต้อง Deploy > Manage deployments > Edit > New version
+Script Properties ใช้ร่วมกันในโครงการ ห้ามแชร์สิทธิ์แก้สคริปต์กับบุคคลที่ไม่ควรรู้ BRIDGE_SECRET
+ฟังก์ชัน initializeBridge รันซ้ำได้โดยไม่เปลี่ยน BRIDGE_SECRET
+
+Protocol v1 (สำหรับ Backend เท่านั้น)
+Request: {v:1, ts:<Unix milliseconds>, nonce:<UUID>, payload:<JSON string>, signature:<lowercase hex HMAC>}
+HMAC input: 'v1\n' + ts + '\n' + nonce + '\n' + payload
+Payload upload: {action:'upload', evidenceId:<UUID>, sha256:<64 hex>, mimeType:<image MIME>, base64:<standard base64>}
+Payload read: {action:'read', fileId:<private Drive file ID>, sha256:<expected digest>}
+Payload health: {action:'health'}
+Response: {v:1, nonce:<same nonce>, payload:<JSON string>, signature:<hex HMAC>}
+Response HMAC input: 'v1-response\n' + nonce + '\n' + payload
+Backend ต้องตรวจลายเซ็นตอบกลับและสิทธิ์ผู้ใช้เสมอ ห้ามส่ง BRIDGE_SECRET หรือ Drive IDs ไป Frontend
