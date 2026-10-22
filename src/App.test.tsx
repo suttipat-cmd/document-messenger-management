@@ -190,3 +190,27 @@ it("opens the mobile action sheet and preserves the reason requirement", async (
   expect(screen.getByRole("status").textContent).toContain("ระบุเหตุผล");
   expect(screen.queryByRole("dialog")).toBeNull();
 });
+
+it("returns from a stop to the route list with its search and filter retained", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await u.click(screen.getByRole("button", { name: "จุดรับ–ส่ง" }));
+  await u.type(screen.getByRole("textbox", { name: "ค้นหางานหรือสถานที่" }), "กสิกร");
+  await u.click(screen.getByRole("button", { name: "จุดส่ง" }));
+  await u.click(screen.getByRole("button", { name: "ดำเนินการ" }));
+  expect(screen.getByRole("heading", { name: "หลักฐานการดำเนินการ" })).toBeTruthy();
+  await u.click(screen.getByRole("button", { name: /กลับจุดรับ–ส่ง/ }));
+  expect(screen.getByRole("heading", { name: "จุดรับ–ส่ง" })).toBeTruthy();
+  expect((screen.getByRole("textbox", { name: "ค้นหางานหรือสถานที่" }) as HTMLInputElement).value).toBe("กสิกร");
+  expect(screen.getByRole("button", { name: "จุดส่ง" }).getAttribute("aria-pressed")).toBe("true");
+  expect(screen.queryByText("ลำดับเหตุการณ์")).toBeNull();
+});
+it("returns from a stop to job details when opened inside that job", async () => {
+  const u = userEvent.setup();
+  render(<App />);
+  await u.click(within(findJob("MSG-0261")).getByRole("button", { name: "ดูรายละเอียด" }));
+  await u.click(screen.getAllByRole("button", { name: "ดำเนินการ" })[0]);
+  await u.click(screen.getByRole("button", { name: /กลับรายละเอียดงาน/ }));
+  expect(screen.getByRole("heading", { name: "รับ–ส่งเอกสารฝ่ายบัญชี" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "ลำดับเหตุการณ์" })).toBeTruthy();
+});

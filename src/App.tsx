@@ -137,6 +137,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
   const [tab, setTab] = useState<Tab>("jobs");
   const [selected, setSelected] = useState<string>();
   const [stopId, setStopId] = useState<string>();
+  const [stopOrigin, setStopOrigin] = useState<"details" | "list">("details");
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [stopFilter, setStopFilter] = useState("all");
@@ -168,8 +169,10 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
   };
   const back = () => {
     window.scrollTo({ top: 0, behavior: "instant" });
-    if (stopId) setStopId(undefined);
-    else setSelected(undefined);
+    if (stopId) {
+      setStopId(undefined);
+      if (stopOrigin === "list") setSelected(undefined);
+    } else setSelected(undefined);
     setNote("");
     setNotice("");
   };
@@ -299,6 +302,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
     </label>
   );
   const openStop = (j: Job, st: Stop) => {
+    setStopOrigin(selected === j.id ? "details" : "list");
     open(j);
     setStopId(st.id);
     setNote(st.note || "");
@@ -554,7 +558,13 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           {job ? (
             <>
               <button className="back" onClick={back}>
-                ← {stop ? "กลับรายละเอียดงาน" : "กลับรายการ"}
+                ← {stop
+                  ? stopOrigin === "details"
+                    ? "กลับรายละเอียดงาน"
+                    : tab === "stops"
+                      ? "กลับจุดรับ–ส่ง"
+                      : "กลับรายการงาน"
+                  : "กลับรายการ"}
               </button>
               <div className="row">
                 <span className="eyebrow">{job.id}</span>
