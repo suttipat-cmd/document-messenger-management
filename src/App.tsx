@@ -541,7 +541,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             m<span>↗</span>
           </span>
           <span>
-            บริหารงานบริการ<small>งานของฉัน</small>
+            บริหารงานรับ/ส่งเอกสาร<small>งานของฉัน</small>
           </span>
         </a>
         <span className="avatar">

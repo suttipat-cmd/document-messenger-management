@@ -336,7 +336,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="auth-shell">
       <span className="brandmark">m↗</span>
-      <span className="eyebrow">ระบบบริหารงานบริการ</span>
+      <span className="eyebrow">ระบบบริหารงานรับ/ส่งเอกสาร</span>
       <h1>{signup ? "สร้างบัญชี" : "เข้าสู่ระบบ"}</h1>
 
       <a className="public-entry" href="#/request">

@@ -54,7 +54,7 @@ type DbEvent = { job_id: string; message: string; created_at: string };
 async function readAll<T>(table: string, columns = "*"): Promise<T[]> {
   if (!supabase) throw new Error("Supabase configuration missing");
   const rows: T[] = [];
-  for (let offset = 0; ; offset += 500) {
+  for (let offset = 0;; offset += 500) {
     const result = await supabase
       .from(table)
       .select(columns)
@@ -75,8 +75,9 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
     .maybeSingle();
   if (p.error) throw p.error;
   const profile = p.data as Profile | null;
-  if (!profile?.active)
+  if (!profile?.active) {
     return { profile, jobs: [], order: [], messengers: [], profiles: [] };
+  }
   const [dbJobs, dbStops, events, profiles] = await Promise.all([
     readAll<DbJob>("messenger_jobs"),
     readAll<DbStop>("messenger_stops"),
@@ -92,7 +93,10 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
     profiles,
     messengers: profiles.filter((p) => p.active && p.role === "messenger"),
     jobs: dbJobs
-      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .sort((a, b) =>
+        b.job_date.localeCompare(a.job_date) ||
+        b.created_at.localeCompare(a.created_at) || b.code.localeCompare(a.code)
+      )
       .map((j) => ({
         id: j.code,
         dbId: j.id,
@@ -101,7 +105,8 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         person: j.requester,
         requesterPhone: j.requester_phone,
         jobDate: j.job_date,
-        intakePending: !!j.intake_pending && Date.now()-Date.parse(j.created_at)<7200000,
+        intakePending: !!j.intake_pending &&
+          Date.now() - Date.parse(j.created_at) < 7200000,
         messengerId: j.messenger_id,
         messengerName: profiles.find((p) => p.id === j.messenger_id)
           ?.display_name,
@@ -150,14 +155,15 @@ export async function reorder(ids: string[]) {
   if (r.error) throw r.error;
 }
 export function errorText(error: unknown) {
-  const code =
-    typeof error === "object" && error && "code" in error
-      ? String(error.code)
-      : "";
-  if (code === "40001")
+  const code = typeof error === "object" && error && "code" in error
+    ? String(error.code)
+    : "";
+  if (code === "40001") {
     return "งานมีการเปลี่ยนแปลงจากอีกหน้าจอ กรุณารีเฟรชแล้วลองอีกครั้ง";
-  if (code === "42501")
+  }
+  if (code === "42501") {
     return "ไม่มีสิทธิ์ดำเนินการ หรือบัญชีถูกระงับ กรุณาติดต่อผู้ดูแลระบบ";
+  }
   return "เชื่อมต่อหรือบันทึกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง";
 }
 

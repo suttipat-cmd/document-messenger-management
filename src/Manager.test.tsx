@@ -1,4 +1,4 @@
-import { cleanup, render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import Manager from "./Manager";
@@ -133,7 +133,8 @@ it("links to the single public form and removes the duplicate menu and create bu
   );
   expect(screen.queryByRole("link", { name: /ฟอร์มสร้างงาน/ })).toBeNull();
   expect(screen.queryByRole("button", { name: /สร้างงาน/ })).toBeNull();
-  expect(screen.getByRole("link", { name: /บริหารงานบริการ/ })).toBeTruthy();
+  expect(screen.getByRole("link", { name: /บริหารงานรับ\/ส่งเอกสาร/ }))
+    .toBeTruthy();
 });
 it("combines department, assignee, status and inclusive date filters and clears them together", async () => {
   const u = userEvent.setup();
@@ -208,7 +209,7 @@ it("paginates after filtering, keeps global row numbers and resets to page one w
   await u.click(screen.getByRole("button", { name: "หน้าถัดไป" }));
   expect(
     screen.getAllByRole("button", { name: /MSG-/ })[0].textContent,
-  ).toContain("MSG-26100011");
+  ).toContain("MSG-26100015");
   expect(
     screen.getAllByRole("button", { name: /MSG-/ })[0].querySelector(".ordinal")
       ?.textContent,
@@ -242,4 +243,31 @@ it("switches the detail history tab using the keyboard", async () => {
     screen.getByRole("tab", { name: "ประวัติ" }).getAttribute("aria-selected"),
   ).toBe("true");
   expect(screen.getByRole("tabpanel").textContent).toContain("ยังไม่มีประวัติ");
+});
+
+it("orders dates descending before pagination, with job code as the tie breaker", () => {
+  const base = snapshot.jobs[0];
+  render(
+    <Manager
+      snapshot={{
+        ...snapshot,
+        jobs: [{ ...base, id: "MSG-26100001", jobDate: "2026-10-12" }, {
+          ...base,
+          id: "MSG-26100002",
+          jobDate: "2026-10-25",
+        }, { ...base, id: "MSG-26100003", jobDate: "2026-10-25" }],
+      }}
+      users={null}
+      busy={false}
+      onCommand={vi.fn()}
+      onRefresh={vi.fn()}
+      onLogout={vi.fn()}
+    />,
+  );
+  const rows = screen.getAllByRole("button", { name: /MSG-2610/ });
+  expect(rows.map((row) => row.textContent?.match(/MSG-\d+/)?.[0])).toEqual([
+    "MSG-26100003",
+    "MSG-26100002",
+    "MSG-26100001",
+  ]);
 });

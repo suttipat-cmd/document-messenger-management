@@ -1,4 +1,5 @@
 const paths: Record<string, string> = {
+  logout: "M9 4H4v16h5 M9 12h12 M17 8l4 4-4 4",
   jobs: "M4 5h16v16H4z M8 2v6 M16 2v6 M8 12h8 M8 16h5",
   stops:
     "M12 22s7-6 7-13a7 7 0 0 0-14 0c0 7 7 13 7 13z M12 6a3 3 0 1 0 0 6a3 3 0 0 0 0-6",

@@ -54,8 +54,7 @@ export default function Manager({
       ]),
     ).entries(),
   ).sort((a, b) => a[1].localeCompare(b[1], "th"));
-  const filtered =
-    search.trim() !== "" ||
+  const filtered = search.trim() !== "" ||
     status !== "all" ||
     department !== "all" ||
     messenger !== "all" ||
@@ -86,6 +85,9 @@ export default function Manager({
         .join(" ")
         .toLowerCase()
         .includes(search.trim().toLowerCase()),
+  ).sort((a, b) =>
+    (b.jobDate || " ").localeCompare(a.jobDate || " ") ||
+    b.id.localeCompare(a.id)
   );
   const pageKey = JSON.stringify([
     search,
@@ -105,79 +107,103 @@ export default function Manager({
   const chips = [
     ...(search.trim()
       ? [
-          {
-            id: "search",
-            label: "ค้นหา: " + search.trim(),
-            clear: () => setSearch(""),
-          },
-        ]
+        {
+          id: "search",
+          label: "ค้นหา: " + search.trim(),
+          clear: () => setSearch(""),
+        },
+      ]
       : []),
     ...(status !== "all"
       ? [
-          {
-            id: "status",
-            label: labels[status as keyof typeof labels],
-            clear: () => setStatus("all"),
-          },
-        ]
+        {
+          id: "status",
+          label: labels[status as keyof typeof labels],
+          clear: () => setStatus("all"),
+        },
+      ]
       : []),
     ...(department !== "all"
       ? [
-          {
-            id: "department",
-            label: department === "__blank" ? "ไม่ระบุแผนก" : department,
-            clear: () => setDepartment("all"),
-          },
-        ]
+        {
+          id: "department",
+          label: department === "__blank" ? "ไม่ระบุแผนก" : department,
+          clear: () => setDepartment("all"),
+        },
+      ]
       : []),
     ...(messenger !== "all"
       ? [
-          {
-            id: "messenger",
-            label:
-              messengers.find(([id]) => (id || "__blank") === messenger)?.[1] ||
-              "ผู้รับงาน",
-            clear: () => setMessenger("all"),
-          },
-        ]
+        {
+          id: "messenger",
+          label:
+            messengers.find(([id]) => (id || "__blank") === messenger)?.[1] ||
+            "ผู้รับงาน",
+          clear: () => setMessenger("all"),
+        },
+      ]
       : []),
   ];
   const job = snapshot.jobs.find((j) => j.id === selected);
   return (
     <div className="management-shell">
-      <aside className="management-sidebar">
-        <a className="management-brand" href="#/">
-          <Icon name="jobs" /> <b>บริหารงานบริการ</b>
-        </a>
-        <nav aria-label="เมนูจัดการ">
-          <button
-            className={tab === "jobs" ? "selected" : ""}
-            onClick={() => setTab("jobs")}
+      <div className="management-sidebar-slot">
+        <aside className="management-sidebar" aria-label="เมนูจัดการระบบ">
+          <a
+            className="management-brand"
+            href="#/"
+            aria-label="บริหารงานรับ/ส่งเอกสาร"
+            title="บริหารงานรับ/ส่งเอกสาร"
           >
-            <Icon name="jobs" size={18} /> งานทั้งหมด{" "}
-            <span>{snapshot.jobs.length}</span>
-          </button>
-          {snapshot.profile?.role === "admin" && (
+            <Icon name="jobs" />{" "}
+            <b className="sidebar-label">บริหารงานรับ/ส่งเอกสาร</b>
+          </a>
+          <nav aria-label="เมนูจัดการ">
             <button
-              className={tab === "users" ? "selected" : ""}
-              onClick={() => setTab("users")}
+              aria-label="งานทั้งหมด"
+              title="งานทั้งหมด"
+              className={tab === "jobs" ? "selected" : ""}
+              onClick={() => setTab("jobs")}
             >
-              <Icon name="account" size={18} /> บัญชีผู้ใช้
+              <Icon name="jobs" size={18} />{" "}
+              <span className="sidebar-label">งานทั้งหมด</span>
+              <span className="sidebar-count">{snapshot.jobs.length}</span>
             </button>
-          )}
-        </nav>
-        <div className="management-account">
-          <b>{snapshot.profile?.display_name}</b>
-          <small>
-            {snapshot.profile?.role === "admin"
-              ? "ผู้ดูแลระบบ"
-              : "ผู้จัดการงาน"}
-          </small>
-          <button disabled={busy} onClick={onLogout}>
-            ออกจากระบบ
-          </button>
-        </div>
-      </aside>
+            {snapshot.profile?.role === "admin" && (
+              <button
+                aria-label="บัญชีผู้ใช้"
+                title="บัญชีผู้ใช้"
+                className={tab === "users" ? "selected" : ""}
+                onClick={() => setTab("users")}
+              >
+                <Icon name="account" size={18} />{" "}
+                <span className="sidebar-label">บัญชีผู้ใช้</span>
+              </button>
+            )}
+          </nav>
+          <div className="management-account">
+            <div
+              className="sidebar-profile"
+              title={snapshot.profile?.display_name}
+            >
+              <Icon name="account" />
+              <b className="sidebar-label">{snapshot.profile?.display_name}</b>
+            </div>
+            <small className="sidebar-label">
+              {snapshot.profile?.role === "admin" ? "ผู้ดูแลระบบ" : "ผู้จัดการงาน"}
+            </small>
+            <button
+              disabled={busy}
+              onClick={onLogout}
+              aria-label="ออกจากระบบ"
+              title="ออกจากระบบ"
+            >
+              <Icon name="logout" />
+              <span className="sidebar-label">ออกจากระบบ</span>
+            </button>
+          </div>
+        </aside>
+      </div>
       <main className="management-main">
         <header className="management-topbar">
           <div>
@@ -185,9 +211,7 @@ export default function Manager({
           </div>
           <div className="management-actions">
             <button className="secondary" disabled={busy} onClick={onRefresh}>
-              {busy ? (
-                <Loading />
-              ) : (
+              {busy ? <Loading /> : (
                 <>
                   <Icon name="refresh" size={16} /> โหลดใหม่
                 </>
@@ -201,291 +225,285 @@ export default function Manager({
             </a>
           </div>
         </header>
-        {tab === "users" ? (
-          <section className="management-users">{users}</section>
-        ) : (
-          <>
-            <div className="management-stats">
-              {(["new", "active", "returning", "done"] as const).map((s) => (
-                <button
-                  key={s}
-                  className={
-                    "summary-status " + s + (status === s ? " selected" : "")
-                  }
-                  onClick={() => setStatus(status === s ? "all" : s)}
-                >
-                  <span>{labels[s]}</span>
-                  <strong>
-                    {snapshot.jobs.filter((j) => j.status === s).length}
-                  </strong>
-                </button>
-              ))}
-            </div>
-            <section className="management-list">
-              <div className="management-filters">
-                <div className="management-toolbar">
-                  <input
-                    aria-label="ค้นหางาน"
-                    placeholder="ค้นหาเลขงาน ชื่องาน ผู้มอบหมาย…"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
-                  <select
-                    aria-label="สถานะงาน"
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                  >
-                    <option value="all">ทุกสถานะ</option>
-                    {Object.entries(labels).map(([s, l]) => (
-                      <option key={s} value={s}>
-                        {l}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="แผนก"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                  >
-                    <option value="all">ทุกแผนก</option>
-                    {departments.map((d) => (
-                      <option key={d || "__blank"} value={d || "__blank"}>
-                        {d || "ไม่ระบุแผนก"}
-                      </option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="ผู้รับงาน"
-                    value={messenger}
-                    onChange={(e) => setMessenger(e.target.value)}
-                  >
-                    <option value="all">ผู้รับงานทั้งหมด</option>
-                    {messengers.map(([id, name]) => (
-                      <option key={id || "__blank"} value={id || "__blank"}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="management-date-filters">
-                  <label>
-                    ตั้งแต่วันที่
-                    <input
-                      type="date"
-                      aria-label="ตั้งแต่วันที่"
-                      min="0001-01-01"
-                      max="9999-12-31"
-                      value={from}
-                      onChange={(e) => setFrom(e.target.value)}
-                    />
-                  </label>
-                  <label>
-                    ถึงวันที่
-                    <input
-                      type="date"
-                      aria-label="ถึงวันที่"
-                      min={from || "0001-01-01"}
-                      max="9999-12-31"
-                      value={to}
-                      onChange={(e) => setTo(e.target.value)}
-                    />
-                  </label>
+        {tab === "users"
+          ? <section className="management-users">{users}</section>
+          : (
+            <>
+              <div className="management-stats">
+                {(["new", "active", "returning", "done"] as const).map((s) => (
                   <button
-                    className="filter-quick"
-                    onClick={() => {
-                      const d = today();
-                      setFrom(d);
-                      setTo(d);
-                    }}
+                    key={s}
+                    className={"summary-status " + s +
+                      (status === s ? " selected" : "")}
+                    onClick={() => setStatus(status === s ? "all" : s)}
                   >
-                    วันนี้
-                  </button>
-                  {filtered && (
-                    <button className="filter-clear" onClick={resetFilters}>
-                      ล้างตัวกรอง
-                    </button>
-                  )}
-                  <span className="filter-count" role="status">
-                    {filtered
-                      ? `${jobs.length} จาก ${snapshot.jobs.length} งาน`
-                      : `${jobs.length} งาน`}
-                  </span>
-                </div>
-                {chips.length > 0 && (
-                  <div className="ds-chips" aria-label="ตัวกรองที่เลือก">
-                    {chips.map((c) => (
-                      <span className="ds-chip" key={c.id}>
-                        {c.label}
-                        <span
-                          className="ds-tooltip"
-                          data-tooltip={"ลบ " + c.label}
-                        >
-                          <button
-                            aria-label={"ลบตัวกรอง " + c.label}
-                            onClick={c.clear}
-                          >
-                            <Icon name="close" size={14} />
-                          </button>
-                        </span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {invalidDates && (
-                  <p className="filter-error" role="alert">
-                    วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
-                  </p>
-                )}
-              </div>
-              <div
-                className="management-table"
-                role="table"
-                aria-label="งานทั้งหมด"
-              >
-                <div className="management-row table-heading" role="row">
-                  {[
-                    "ลำดับ",
-                    "วันที่",
-                    "เลขงาน",
-                    "ชื่องาน",
-                    "แผนก",
-                    "ผู้มอบหมาย",
-                    "ผู้รับส่งเอกสาร",
-                    "สถานะ",
-                    "ความคืบหน้า",
-                  ].map((h) => (
-                    <span role="columnheader" key={h}>
-                      {h}
-                    </span>
-                  ))}
-                </div>
-                {visibleJobs.map((j, index) => (
-                  <button
-                    key={j.id}
-                    className={
-                      "management-row job-status-" +
-                      j.status +
-                      " " +
-                      (selected === j.id ? "selected" : "")
-                    }
-                    onClick={() => setSelected(j.id)}
-                  >
-                    <span className="ordinal" data-label="ลำดับ">
-                      {pageStart + index + 1}
-                    </span>
-                    <span data-label="วันที่">{dateLabel(j.jobDate)}</span>
-                    <span className="code" data-label="เลขงาน">
-                      {j.id}
-                    </span>
-                    <span className="job-title" data-label="ชื่องาน">
-                      <b>{j.title}</b>
-                    </span>
-                    <span data-label="แผนก">{j.department || "—"}</span>
-                    <span data-label="ผู้มอบหมาย">{j.person}</span>
-                    <span data-label="ผู้รับส่งเอกสาร">
-                      {j.messengerName || "—"}
-                    </span>
-                    <span>
-                      <i className={"status-tag " + j.status}>
-                        {labels[j.status]}
-                      </i>
-                    </span>
-                    <span>
-                      {j.stops.filter((s) => s.status === "done").length}/
-                      {j.stops.length} จุด
-                      <progress
-                        value={
-                          j.stops.filter((s) => s.status === "done").length
-                        }
-                        max={j.stops.length || 1}
-                      />
-                    </span>
+                    <span>{labels[s]}</span>
+                    <strong>
+                      {snapshot.jobs.filter((j) => j.status === s).length}
+                    </strong>
                   </button>
                 ))}
               </div>
-              {!jobs.length && (
-                <EmptyState
-                  title={
-                    snapshot.jobs.length ? "ไม่พบงานตามตัวกรอง" : "ยังไม่มีงาน"
-                  }
-                  description={
-                    snapshot.jobs.length
-                      ? "ลองเปลี่ยนหรือล้างตัวกรอง"
-                      : "เริ่มมอบหมายงานผ่านแบบฟอร์ม"
-                  }
-                  action={
-                    snapshot.jobs.length ? (
-                      <button className="secondary" onClick={resetFilters}>
-                        ล้างตัวกรอง
-                      </button>
-                    ) : (
-                      <a
-                        className="primary form-link"
-                        href="https://suttipat-cmd.github.io/document-messenger-management/#/request"
-                      >
-                        แบบฟอร์ม
-                      </a>
-                    )
-                  }
-                />
-              )}
-              {jobs.length > 0 && (
-                <div className="ds-pagination">
-                  <label>
-                    แสดง{" "}
+              <section className="management-list">
+                <div className="management-filters">
+                  <div className="management-toolbar">
+                    <input
+                      aria-label="ค้นหางาน"
+                      placeholder="ค้นหาเลขงาน ชื่องาน ผู้มอบหมาย…"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
                     <select
-                      aria-label="จำนวนงานต่อหน้า"
-                      value={pageSize}
-                      onChange={(e) => setPageSize(Number(e.target.value))}
+                      aria-label="สถานะงาน"
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
                     >
-                      {[10, 20, 50].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
+                      <option value="all">ทุกสถานะ</option>
+                      {Object.entries(labels).map(([s, l]) => (
+                        <option key={s} value={s}>
+                          {l}
                         </option>
                       ))}
-                    </select>{" "}
-                    งานต่อหน้า
-                  </label>
-                  <span>
-                    {pageStart + 1}–
-                    {Math.min(pageStart + pageSize, jobs.length)} จาก{" "}
-                    {jobs.length} งาน
-                  </span>
-                  <nav aria-label="แบ่งหน้างาน">
-                    <button
-                      aria-label="หน้าก่อนหน้า"
-                      disabled={page === 1}
-                      onClick={() => goPage(page - 1)}
+                    </select>
+                    <select
+                      aria-label="แผนก"
+                      value={department}
+                      onChange={(e) => setDepartment(e.target.value)}
                     >
-                      <Icon name="back" size={16} />
+                      <option value="all">ทุกแผนก</option>
+                      {departments.map((d) => (
+                        <option key={d || "__blank"} value={d || "__blank"}>
+                          {d || "ไม่ระบุแผนก"}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="ผู้รับงาน"
+                      value={messenger}
+                      onChange={(e) => setMessenger(e.target.value)}
+                    >
+                      <option value="all">ผู้รับงานทั้งหมด</option>
+                      {messengers.map(([id, name]) => (
+                        <option key={id || "__blank"} value={id || "__blank"}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="management-date-filters">
+                    <label>
+                      ตั้งแต่วันที่
+                      <input
+                        type="date"
+                        aria-label="ตั้งแต่วันที่"
+                        min="0001-01-01"
+                        max="9999-12-31"
+                        value={from}
+                        onChange={(e) => setFrom(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      ถึงวันที่
+                      <input
+                        type="date"
+                        aria-label="ถึงวันที่"
+                        min={from || "0001-01-01"}
+                        max="9999-12-31"
+                        value={to}
+                        onChange={(e) => setTo(e.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="filter-quick"
+                      onClick={() => {
+                        const d = today();
+                        setFrom(d);
+                        setTo(d);
+                      }}
+                    >
+                      วันนี้
                     </button>
-                    {Array.from(
-                      { length: Math.min(5, pageCount) },
-                      (_, i) =>
-                        Math.max(1, Math.min(page - 2, pageCount - 4)) + i,
-                    ).map((n) => (
-                      <button
-                        key={n}
-                        aria-label={"หน้า " + n}
-                        aria-current={n === page ? "page" : undefined}
-                        onClick={() => goPage(n)}
-                      >
-                        {n}
+                    {filtered && (
+                      <button className="filter-clear" onClick={resetFilters}>
+                        ล้างตัวกรอง
                       </button>
-                    ))}
-                    <button
-                      aria-label="หน้าถัดไป"
-                      disabled={page === pageCount}
-                      onClick={() => goPage(page + 1)}
-                    >
-                      <Icon name="chevron" size={16} />
-                    </button>
-                  </nav>
+                    )}
+                    <span className="filter-count" role="status">
+                      {filtered
+                        ? `${jobs.length} จาก ${snapshot.jobs.length} งาน`
+                        : `${jobs.length} งาน`}
+                    </span>
+                  </div>
+                  {chips.length > 0 && (
+                    <div className="ds-chips" aria-label="ตัวกรองที่เลือก">
+                      {chips.map((c) => (
+                        <span className="ds-chip" key={c.id}>
+                          {c.label}
+                          <span
+                            className="ds-tooltip"
+                            data-tooltip={"ลบ " + c.label}
+                          >
+                            <button
+                              aria-label={"ลบตัวกรอง " + c.label}
+                              onClick={c.clear}
+                            >
+                              <Icon name="close" size={14} />
+                            </button>
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {invalidDates && (
+                    <p className="filter-error" role="alert">
+                      วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด
+                    </p>
+                  )}
                 </div>
-              )}
-            </section>
-          </>
-        )}
+                <div
+                  className="management-table"
+                  role="table"
+                  aria-label="งานทั้งหมด"
+                >
+                  <div className="management-row table-heading" role="row">
+                    {[
+                      "ลำดับ",
+                      "วันที่",
+                      "เลขงาน",
+                      "ชื่องาน",
+                      "แผนก",
+                      "ผู้มอบหมาย",
+                      "ผู้รับส่งเอกสาร",
+                      "สถานะ",
+                      "ความคืบหน้า",
+                    ].map((h) => (
+                      <span role="columnheader" key={h}>
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                  {visibleJobs.map((j, index) => (
+                    <button
+                      key={j.id}
+                      className={"management-row job-status-" +
+                        j.status +
+                        " " +
+                        (selected === j.id ? "selected" : "")}
+                      onClick={() => setSelected(j.id)}
+                    >
+                      <span className="ordinal" data-label="ลำดับ">
+                        {pageStart + index + 1}
+                      </span>
+                      <span data-label="วันที่">{dateLabel(j.jobDate)}</span>
+                      <span className="code" data-label="เลขงาน">
+                        {j.id}
+                      </span>
+                      <span className="job-title" data-label="ชื่องาน">
+                        <b>{j.title}</b>
+                      </span>
+                      <span data-label="แผนก">{j.department || "—"}</span>
+                      <span data-label="ผู้มอบหมาย">{j.person}</span>
+                      <span data-label="ผู้รับส่งเอกสาร">
+                        {j.messengerName || "—"}
+                      </span>
+                      <span>
+                        <i className={"status-tag " + j.status}>
+                          {labels[j.status]}
+                        </i>
+                      </span>
+                      <span>
+                        {j.stops.filter((s) => s.status === "done").length}/
+                        {j.stops.length} จุด
+                        <progress
+                          value={j.stops.filter((s) => s.status === "done")
+                            .length}
+                          max={j.stops.length || 1}
+                        />
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {!jobs.length && (
+                  <EmptyState
+                    title={snapshot.jobs.length
+                      ? "ไม่พบงานตามตัวกรอง"
+                      : "ยังไม่มีงาน"}
+                    description={snapshot.jobs.length
+                      ? "ลองเปลี่ยนหรือล้างตัวกรอง"
+                      : "เริ่มมอบหมายงานผ่านแบบฟอร์ม"}
+                    action={snapshot.jobs.length
+                      ? (
+                        <button className="secondary" onClick={resetFilters}>
+                          ล้างตัวกรอง
+                        </button>
+                      )
+                      : (
+                        <a
+                          className="primary form-link"
+                          href="https://suttipat-cmd.github.io/document-messenger-management/#/request"
+                        >
+                          แบบฟอร์ม
+                        </a>
+                      )}
+                  />
+                )}
+                {jobs.length > 0 && (
+                  <div className="ds-pagination">
+                    <label>
+                      แสดง{" "}
+                      <select
+                        aria-label="จำนวนงานต่อหน้า"
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                      >
+                        {[10, 20, 50].map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>{" "}
+                      งานต่อหน้า
+                    </label>
+                    <span>
+                      {pageStart + 1}–
+                      {Math.min(pageStart + pageSize, jobs.length)} จาก{" "}
+                      {jobs.length} งาน
+                    </span>
+                    <nav aria-label="แบ่งหน้างาน">
+                      <button
+                        aria-label="หน้าก่อนหน้า"
+                        disabled={page === 1}
+                        onClick={() => goPage(page - 1)}
+                      >
+                        <Icon name="back" size={16} />
+                      </button>
+                      {Array.from(
+                        { length: Math.min(5, pageCount) },
+                        (_, i) =>
+                          Math.max(1, Math.min(page - 2, pageCount - 4)) + i,
+                      ).map((n) => (
+                        <button
+                          key={n}
+                          aria-label={"หน้า " + n}
+                          aria-current={n === page ? "page" : undefined}
+                          onClick={() => goPage(n)}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                      <button
+                        aria-label="หน้าถัดไป"
+                        disabled={page === pageCount}
+                        onClick={() => goPage(page + 1)}
+                      >
+                        <Icon name="chevron" size={16} />
+                      </button>
+                    </nav>
+                  </div>
+                )}
+              </section>
+            </>
+          )}
       </main>
       {job && tab === "jobs" && (
         <JobPanel
@@ -596,12 +614,11 @@ function JobPanel({
         {job.stops.map((s, i) => (
           <section className="management-stop" key={s.id}>
             <small>
-              {i + 1} · {s.kind} ·{" "}
-              {s.status === "done"
+              {i + 1} · {s.kind} · {s.status === "done"
                 ? "สำเร็จ"
                 : s.status === "retry"
-                  ? "รอทำใหม่"
-                  : "รอดำเนินการ"}
+                ? "รอทำใหม่"
+                : "รอดำเนินการ"}
             </small>
             <b>{s.name}</b>
             <p>{s.address}</p>

@@ -166,7 +166,7 @@ export default function PublicRequest() {
       <header className="public-header">
         <span className="brandmark">m↗</span>
         <div>
-          <b>ระบบบริหารงานบริการ</b>
+          <b>ระบบบริหารงานรับ/ส่งเอกสาร</b>
         </div>
         <a href="#/">เข้าสู่ระบบ</a>
       </header>

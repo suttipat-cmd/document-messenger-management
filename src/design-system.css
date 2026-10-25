@@ -1415,3 +1415,33 @@ textarea[aria-invalid="true"],
 .evidence-draft { margin-block:16px; }
 .evidence-draft .evidence-thumb button { min-height:44px; }
 .intake-fields {border:0;padding:0;margin:0;min-width:0;}
+
+/* Compact management rail; expansion overlays the workspace without shifting it. */
+.management-sidebar-slot {flex:0 0 72px;width:72px;min-width:0;}
+.management-sidebar {width:72px;padding:20px 10px;z-index:50;overflow:hidden;transition:width .16s ease,box-shadow .16s ease;}
+.management-sidebar .sidebar-label,.management-sidebar .sidebar-count {display:none;}
+.management-sidebar .ds-icon {flex-shrink:0;}
+.management-brand {padding:0 14px 24px;min-height:48px;}
+.management-sidebar nav button {width:100%;padding:12px 14px;min-height:48px;gap:12px;}
+.management-sidebar nav .sidebar-label {margin:0;}
+.management-account {padding:12px 0;gap:12px;}
+.sidebar-profile {display:flex;align-items:center;gap:12px;padding:0 14px;min-height:40px;}
+.management-account button {display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:48px;}
+@media (min-width:801px) {
+  .management-sidebar:is(:hover,:has(:focus-visible)) {width:276px;box-shadow:var(--shadow);}
+  .management-sidebar:is(:hover,:has(:focus-visible)) .sidebar-label,
+  .management-sidebar:is(:hover,:has(:focus-visible)) .sidebar-count {display:block;}
+  .management-sidebar .sidebar-label {white-space:nowrap;}
+  .management-sidebar .management-brand b {white-space:normal;font-size:14px;line-height:1.5;}
+  .management-sidebar .management-account>small {padding-inline:14px;}
+}
+@media (max-width:800px) {
+  .management-sidebar-slot {width:100%;}
+  .management-sidebar {width:100%;height:auto;padding:8px 12px;display:flex;flex-direction:row;align-items:center;gap:8px;overflow:visible;}
+  .management-brand {padding:12px;}
+  .management-sidebar nav {flex-wrap:nowrap;}
+  .management-sidebar nav button {width:48px;}
+  .management-account {margin:0 0 0 auto;padding:0;}
+  .sidebar-profile {display:none;}
+}
+@media (prefers-reduced-motion:reduce) {.management-sidebar {transition:none;}}
