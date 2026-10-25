@@ -1403,3 +1403,15 @@ textarea[aria-invalid="true"],
     min-height: 48px;
   }
 }
+
+.evidence-group { margin-block: 16px; min-width:0; }
+.evidence-group h4 { margin:0 0 8px; font-size:var(--font-size-body,14px); }
+.evidence-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; }
+.evidence-thumb { margin:0; min-width:0; }
+.evidence-thumb>div { aspect-ratio:4/3; display:grid; place-content:center; padding:8px; background:#f5f6f8; border-radius:8px; font-size:13px; text-align:center; }
+.evidence-preview { padding:0; display:block; width:100%; aspect-ratio:4/3; overflow:hidden; border:1px solid #dfe3e8; border-radius:8px; background:#f5f6f8; }
+.evidence-preview img { width:100%;height:100%;object-fit:contain;display:block; }
+.evidence-thumb figcaption { margin-top:4px; color:#767676; font-size:12px; }
+.evidence-draft { margin-block:16px; }
+.evidence-draft .evidence-thumb button { min-height:44px; }
+.intake-fields {border:0;padding:0;margin:0;min-width:0;}

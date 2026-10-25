@@ -29,3 +29,9 @@ Payload health: {action:'health'}
 Response: {v:1, nonce:<same nonce>, payload:<JSON string>, signature:<hex HMAC>}
 Response HMAC input: 'v1-response\n' + nonce + '\n' + payload
 Backend ต้องตรวจลายเซ็นตอบกลับและสิทธิ์ผู้ใช้เสมอ ห้ามส่ง BRIDGE_SECRET หรือ Drive IDs ไป Frontend
+
+เวอร์ชัน 2: ใช้ deployment URL เดิม เลือกแก้ไข → เวอร์ชันใหม่ → Deploy
+ระบบสร้างโฟลเดอร์ วันที่มอบหมาย / เลขงาน / ภาพฝั่งมอบหมายงาน หรือ ภาพฝั่งไรเดอร์
+วันที่แนบของ Messenger เป็นข้อมูลกำกับภาพ ไม่แยกโฟลเดอร์วันที่ใหม่
+ภาพเก่าใน root ยังอ่านได้ ไม่ต้องย้ายไฟล์เดิม
+รักษาการเข้าถึงทั่วไปของโฟลเดอร์และไฟล์เป็น “จำกัด” เสมอ

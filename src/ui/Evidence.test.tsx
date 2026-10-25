@@ -10,8 +10,8 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import EvidencePanel from "./Evidence";
 import {
   evidenceList,
-  evidenceReady,
   evidenceRead,
+  evidenceReady,
   evidenceUpload,
   prepareImage,
 } from "../lib/evidence";
@@ -84,14 +84,15 @@ it("retains the prepared image for an idempotent retry and only confirms after u
     vi.mocked(evidenceUpload).mock.calls[1][3],
   );
 });
-it("loads a private image on demand and releases its blob URL when closed", async () => {
+it("automatically loads a private preview, reuses it when expanded and releases on unmount", async () => {
   const u = userEvent.setup();
   vi.mocked(evidenceList).mockResolvedValue([item]);
   vi.mocked(evidenceRead).mockResolvedValue(
     new Blob(["image"], { type: "image/jpeg" }),
   );
-  render(<EvidencePanel jobId="job" stopId="stop" />);
-  await u.click(await screen.findByRole("button", { name: "ดูภาพ 1" }));
+  const { unmount } = render(<EvidencePanel jobId="job" stopId="stop" />);
+  expect(await screen.findByRole("img", { name: "ภาพแนบ 1" })).toBeTruthy();
+  await u.click(await screen.findByRole("button", { name: "ขยายภาพ 1" }));
   expect(
     await screen.findByRole("img", { name: "รูปหลักฐานการดำเนินการ" }),
   ).toBeTruthy();
@@ -99,17 +100,17 @@ it("loads a private image on demand and releases its blob URL when closed", asyn
     screen.getByRole("link", { name: "ดาวน์โหลดภาพ" }).getAttribute("href"),
   ).toBe("blob:qa");
   await u.click(screen.getByRole("button", { name: "ปิดหน้าต่าง" }));
+  expect(evidenceRead).toHaveBeenCalledTimes(1);
+  unmount();
   await waitFor(() =>
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:qa"),
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:qa")
   );
 });
 it("shows errors instead of successful photo placeholders", async () => {
   vi.mocked(evidenceList).mockResolvedValue([item]);
   vi.mocked(evidenceRead).mockRejectedValue(Error("ไม่มีสิทธิ์ดูภาพนี้"));
-  const u = userEvent.setup();
   render(<EvidencePanel jobId="job" stopId="stop" />);
-  await u.click(await screen.findByRole("button", { name: "ดูภาพ 1" }));
   expect(await screen.findByRole("alert")).toBeTruthy();
-  expect(screen.getByText("ไม่มีสิทธิ์ดูภาพนี้")).toBeTruthy();
+  expect(screen.getByText("โหลดภาพไม่สำเร็จ")).toBeTruthy();
   expect(screen.queryByRole("link", { name: "ดาวน์โหลดภาพ" })).toBeNull();
 });

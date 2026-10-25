@@ -59,7 +59,7 @@ function doPost(e) {
       if (folder.isTrashed()) throw new Error('NOT_CONFIGURED');
       let result;
       if (payload.action === 'health') {
-        result = {ready: true, protocol: 1, maxBytes: DRIVE_BRIDGE_MAX_BYTES};
+        result = {ready: true, protocol: 2, maxBytes: DRIVE_BRIDGE_MAX_BYTES};
       } else if (payload.action === 'upload') {
         result = bridgeUpload_(folder, payload);
       } else if (payload.action === 'read') {
@@ -93,20 +93,32 @@ function bridgeUpload_(folder, p) {
   bridgeValidateImage_(bytes, p.mimeType);
   if (bridgeDigest_(bytes) !== p.sha256) throw new Error('HASH_MISMATCH');
   const extensions = {'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp'};
-  const name = 'evidence_' + p.evidenceId.toLowerCase() + '_' + p.sha256 + '.' + extensions[p.mimeType];
+  let name = 'evidence_' + p.evidenceId.toLowerCase() + '_' + p.sha256 + '.' + extensions[p.mimeType];
+  const marker = 'evidence:' + p.evidenceId.toLowerCase() + ':' + p.sha256;
+  if (p.layoutVersion === 2) {
+    if (typeof p.jobDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(p.jobDate) ||
+        typeof p.jobCode !== 'string' || !/^MSG-\d{8}$/.test(p.jobCode) ||
+        !['assignment','messenger'].includes(p.source) ||
+        !Number.isInteger(p.imageNumber) || p.imageNumber < 1 || p.imageNumber > 5 ||
+        !(p.pointNumber === null || Number.isInteger(p.pointNumber) && p.pointNumber >= 1 && p.pointNumber <= 20)) throw new Error('INVALID_REQUEST');
+    folder = bridgeChild_(bridgeChild_(bridgeChild_(folder, p.jobDate), p.jobCode),
+      p.source === 'assignment' ? 'ภาพฝั่งมอบหมายงาน' : 'ภาพฝั่งไรเดอร์');
+    name = p.jobCode + ' (' + (p.pointNumber === null ? 'คืนเอกสาร' : 'จุดที่ ' + p.pointNumber) + ') - ' + String(p.imageNumber).padStart(2,'0') + '.' + extensions[p.mimeType];
+  }
   // Stable evidence ID + digest makes retries idempotent. Script lock serializes creation.
   const matches = folder.getFilesByName(name);
   let file;
   while (matches.hasNext()) {
     const candidate = matches.next();
     if (!candidate.isTrashed()) {
+      if (p.layoutVersion === 2 && candidate.getDescription() !== marker) throw new Error('UPLOAD_CONFLICT');
       if (candidate.getSize() !== bytes.length || candidate.getMimeType() !== p.mimeType ||
           bridgeDigest_(candidate.getBlob().getBytes()) !== p.sha256) throw new Error('UPLOAD_CONFLICT');
       file = candidate;
       break;
     }
   }
-  if (!file) file = folder.createFile(Utilities.newBlob(bytes, p.mimeType, name));
+  if (!file) { file = folder.createFile(Utilities.newBlob(bytes, p.mimeType, name)); if (p.layoutVersion === 2) file.setDescription(marker); }
   // Never call setSharing or return a public URL. Parent folder permissions are inherited.
   return {fileId: file.getId(), byteSize: bytes.length, mimeType: p.mimeType, sha256: p.sha256};
 }
@@ -117,10 +129,7 @@ function bridgeRead_(folderId, p) {
   let file;
   try { file = DriveApp.getFileById(p.fileId); } catch (_) { throw new Error('FILE_NOT_AVAILABLE'); }
   if (file.isTrashed()) throw new Error('FILE_NOT_AVAILABLE');
-  const parents = file.getParents();
-  let inFolder = false;
-  while (parents.hasNext()) if (parents.next().getId() === folderId) inFolder = true;
-  if (!inFolder) throw new Error('FILE_NOT_AVAILABLE');
+  if (!bridgeInside_(file, folderId, 4)) throw new Error('FILE_NOT_AVAILABLE');
   if (file.getSize() > DRIVE_BRIDGE_MAX_BYTES) throw new Error('TOO_LARGE');
   const bytes = file.getBlob().getBytes();
   bridgeValidateImage_(bytes, file.getMimeType());
@@ -157,4 +166,20 @@ function bridgeReply_(result, secret, nonce) {
   return ContentService.createTextOutput(JSON.stringify({v: 1, nonce: nonce, payload: payload,
     signature: bridgeHmac_('v1-response\n' + nonce + '\n' + payload, secret)}))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function bridgeChild_(parent, name) {
+  const folders = parent.getFoldersByName(name);
+  while (folders.hasNext()) { const f=folders.next(); if (!f.isTrashed()) return f; }
+  return parent.createFolder(name);
+}
+function bridgeInside_(entry, rootId, depth) {
+  if (depth <= 0) return false;
+  const parents = entry.getParents();
+  while (parents.hasNext()) {
+    const parent=parents.next();
+    if (parent.getId() === rootId) return true;
+    if (!parent.isTrashed() && bridgeInside_(parent,rootId,depth-1)) return true;
+  }
+  return false;
 }

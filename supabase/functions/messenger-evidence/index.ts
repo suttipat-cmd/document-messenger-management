@@ -1,7 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2.118.0";
 const BRIDGE_URL =
   "https://script.google.com/macros/s/AKfycbzKWpCY72jBzvQvWlV0ldCFxxksFHe6NR073VwxkWsbVF1denaheKjiaI4BZnhxsHCV/exec";
-const FOLDER = "11Iyc7T1iJdhRzUOmow_rIUx8bvu8om1O";
 const MAX = 2 * 1024 * 1024;
 const origins = new Set([
   "https://suttipat-cmd.github.io",
@@ -57,8 +56,9 @@ async function bounded(body: ReadableStream<Uint8Array> | null, limit: number) {
 }
 function base64(b: Uint8Array) {
   let s = "";
-  for (let i = 0; i < b.length; i += 8192)
+  for (let i = 0; i < b.length; i += 8192) {
     s += String.fromCharCode(...b.subarray(i, i + 8192));
+  }
   return btoa(s);
 }
 async function bridge(data: Record<string, unknown>, secret: string) {
@@ -93,8 +93,9 @@ async function bridge(data: Record<string, unknown>, secret: string) {
       await hmac("v1-response\n" + nonce + "\n" + envelope.payload, secret),
       envelope.signature,
     )
-  )
+  ) {
     throw Error("BRIDGE_UNAVAILABLE");
+  }
   const result = JSON.parse(envelope.payload);
   if (!result.ok) throw Error(result.error || "BRIDGE_UNAVAILABLE");
   return result.data;
@@ -107,19 +108,22 @@ function imageType(b: Uint8Array) {
     b[2] === 255 &&
     b.at(-2) === 255 &&
     b.at(-1) === 217
-  )
+  ) {
     return "image/jpeg";
+  }
   if (
     b.length >= 24 &&
     [137, 80, 78, 71, 13, 10, 26, 10].every((v, i) => b[i] === v)
-  )
+  ) {
     return "image/png";
+  }
   if (
     b.length >= 16 &&
     new TextDecoder().decode(b.subarray(0, 4)) === "RIFF" &&
     new TextDecoder().decode(b.subarray(8, 12)) === "WEBP"
-  )
+  ) {
     return "image/webp";
+  }
   return "";
 }
 Deno.serve(async (req: Request) => {
@@ -133,16 +137,20 @@ Deno.serve(async (req: Request) => {
     "Access-Control-Allow-Headers":
       "authorization, apikey, content-type, x-client-info",
   };
-  if (origin && origins.has(origin))
+  if (origin && origins.has(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
+  }
   const reply = (status: number, data: unknown) =>
     new Response(JSON.stringify(data), { status, headers });
-  if (origin && !origins.has(origin))
+  if (origin && !origins.has(origin)) {
     return reply(403, { message: "ไม่อนุญาตเว็บไซต์นี้" });
-  if (req.method === "OPTIONS")
+  }
+  if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers });
-  if (!["GET", "POST"].includes(req.method))
+  }
+  if (!["GET", "POST"].includes(req.method)) {
     return reply(405, { message: "ไม่รองรับคำขอนี้" });
+  }
   try {
     const url = Deno.env.get("SUPABASE_URL")!,
       keys = JSON.parse(Deno.env.get("SUPABASE_SECRET_KEYS") || "{}"),
@@ -150,8 +158,9 @@ Deno.serve(async (req: Request) => {
     const key = keys.default || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"),
       pub = pubs.default || Deno.env.get("SUPABASE_ANON_KEY");
     const auth = req.headers.get("authorization");
-    if (!auth?.startsWith("Bearer "))
+    if (!auth?.startsWith("Bearer ")) {
       return reply(401, { message: "กรุณาเข้าสู่ระบบใหม่" });
+    }
     const caller = createClient(url, pub, {
       global: { headers: { Authorization: auth } },
       auth: { persistSession: false, autoRefreshToken: false },
@@ -159,16 +168,18 @@ Deno.serve(async (req: Request) => {
     const { data: identity, error: authError } = await caller.auth.getUser(
       auth.slice(7),
     );
-    if (authError || !identity.user)
+    if (authError || !identity.user) {
       return reply(401, { message: "กรุณาเข้าสู่ระบบใหม่" });
+    }
     const userId = identity.user.id;
     const { data: profile } = await caller
       .from("messenger_profiles")
       .select("role,active")
       .eq("id", userId)
       .maybeSingle();
-    if (!profile?.active)
+    if (!profile?.active) {
       return reply(403, { message: "บัญชีนี้ยังไม่เปิดใช้งาน" });
+    }
     const secret = Deno.env.get("DRIVE_BRIDGE_SECRET") || "";
     if (req.method === "GET") {
       if (secret.length < 32) return reply(200, { ready: false });
@@ -179,10 +190,11 @@ Deno.serve(async (req: Request) => {
         return reply(200, { ready: false });
       }
     }
-    if (secret.length < 32)
+    if (secret.length < 32) {
       return reply(503, {
         message: "ระบบแนบภาพยังไม่พร้อม กรุณาติดต่อผู้ดูแลระบบ",
       });
+    }
     const admin = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -191,15 +203,17 @@ Deno.serve(async (req: Request) => {
       const input = JSON.parse(
         new TextDecoder().decode(await bounded(req.body, 4096)),
       );
-      if (input.action !== "read" || !uuid.test(input.id || ""))
+      if (input.action !== "read" || !uuid.test(input.id || "")) {
         return reply(422, { message: "ข้อมูลภาพไม่ถูกต้อง" });
+      }
       const { data: visible, error } = await caller
         .from("messenger_evidence")
         .select("id,mime_type,byte_size")
         .eq("id", input.id)
         .maybeSingle();
-      if (error || !visible)
+      if (error || !visible) {
         return reply(404, { message: "ไม่พบภาพหรือไม่มีสิทธิ์ดูภาพนี้" });
+      }
       const { data: file, error: mappingError } = await admin.rpc(
         "messenger_evidence_file",
         { p_id: input.id },
@@ -212,32 +226,35 @@ Deno.serve(async (req: Request) => {
       if (
         typeof result.base64 !== "string" ||
         result.base64.length > Math.ceil(MAX / 3) * 4
-      )
+      ) {
         throw Error("INVALID_IMAGE");
-      const bytes = Uint8Array.from(atob(result.base64), (c) =>
-        c.charCodeAt(0),
+      }
+      const bytes = Uint8Array.from(
+        atob(result.base64),
+        (c) => c.charCodeAt(0),
       );
       if (
         bytes.length !== visible.byte_size ||
         imageType(bytes) !== visible.mime_type ||
         (await digest(bytes)) !== file.sha256
-      )
+      ) {
         throw Error("INVALID_IMAGE");
+      }
       const { data: stillVisible } = await caller
         .from("messenger_evidence")
         .select("id")
         .eq("id", input.id)
         .maybeSingle();
-      if (!stillVisible)
+      if (!stillVisible) {
         return reply(403, {
           message: "สิทธิ์เข้าถึงภาพเปลี่ยนแปลง กรุณาโหลดข้อมูลใหม่",
         });
+      }
       return new Response(bytes, {
         headers: {
           ...headers,
           "Content-Type": visible.mime_type,
-          "Content-Disposition":
-            'inline; filename="evidence.' +
+          "Content-Disposition": 'inline; filename="evidence.' +
             ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[
               visible.mime_type as string
             ] || "jpg") +
@@ -245,10 +262,12 @@ Deno.serve(async (req: Request) => {
         },
       });
     }
-    if (!ct.startsWith("multipart/form-data"))
+    if (!ct.startsWith("multipart/form-data")) {
       return reply(415, { message: "รูปแบบข้อมูลไม่ถูกต้อง" });
-    if (profile.role !== "messenger")
+    }
+    if (profile.role !== "messenger") {
       return reply(403, { message: "เฉพาะผู้รับงานที่แนบภาพได้" });
+    }
     const bytes = await bounded(req.body, MAX + 65536);
     const form = await new Response(bytes, {
       headers: { "Content-Type": ct },
@@ -257,6 +276,19 @@ Deno.serve(async (req: Request) => {
       jobId = String(form.get("jobId") || ""),
       stopId = String(form.get("stopId") || ""),
       purpose = String(form.get("purpose") || "");
+    const photoDate = String(
+      form.get("photoDate") ||
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Bangkok",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(new Date()),
+    );
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(photoDate) ||
+      !Number.isFinite(Date.parse(photoDate))
+    ) return reply(422, { message: "กรุณาเลือกวันที่แนบภาพ" });
     const file = form.get("file");
     if (
       !uuid.test(id) ||
@@ -265,54 +297,54 @@ Deno.serve(async (req: Request) => {
       (purpose === "stop" && !uuid.test(stopId)) ||
       (purpose === "return" && stopId) ||
       !(file instanceof File)
-    )
+    ) {
       return reply(422, { message: "ข้อมูลภาพไม่ครบ" });
+    }
     const { data: job } = await caller
       .from("messenger_jobs")
       .select("id,messenger_id,status")
       .eq("id", jobId)
       .maybeSingle();
-    if (!job || job.messenger_id !== userId)
+    if (!job || job.messenger_id !== userId) {
       return reply(403, { message: "ไม่มีสิทธิ์แนบภาพในงานนี้" });
+    }
     const photo = new Uint8Array(await file.arrayBuffer()),
       mime = imageType(photo);
-    if (!photo.length || photo.length > MAX || !mime || mime !== file.type)
+    if (!photo.length || photo.length > MAX || !mime || mime !== file.type) {
       return reply(422, { message: "รองรับ JPEG, PNG และ WebP ไม่เกิน 2 MB" });
-    const sha = await digest(photo),
-      ext = (
-        {
-          "image/jpeg": "jpg",
-          "image/png": "png",
-          "image/webp": "webp",
-        } as Record<string, string>
-      )[mime];
+    }
+    const sha = await digest(photo);
     const { data: reservation, error: reservedError } = await admin.rpc(
-      "messenger_reserve_evidence",
+      "messenger_reserve_evidence_v2",
       {
         p_id: id,
         p_actor: userId,
         p_job: jobId,
         p_stop: stopId || null,
         p_purpose: purpose,
-        p_drive_id: "pending-" + id,
-        p_folder: FOLDER,
         p_sha: sha,
         p_mime: mime,
         p_bytes: photo.length,
-        p_name: "หลักฐาน-" + id + "." + ext,
+        p_date: photoDate,
       },
     );
-    if (reservedError)
+    if (reservedError) {
       return reply(reservedError.code === "42501" ? 403 : 409, {
-        message:
-          reservedError.code === "42501"
-            ? "งานหรือจุดนี้ไม่อยู่ในสถานะที่แนบภาพได้"
-            : "แนบได้สูงสุด 5 ภาพต่อจุด กรุณาโหลดข้อมูลใหม่หรือลองไฟล์เดิมอีกครั้ง",
+        message: reservedError.code === "42501"
+          ? "งานหรือจุดนี้ไม่อยู่ในสถานะที่แนบภาพได้"
+          : "แนบได้สูงสุด 5 ภาพต่อจุด กรุณาโหลดข้อมูลใหม่หรือลองไฟล์เดิมอีกครั้ง",
       });
+    }
     if (!reservation.ready) {
       const uploaded = await bridge(
         {
           action: "upload",
+          layoutVersion: 2,
+          jobDate: reservation.job_date,
+          jobCode: reservation.job_code,
+          pointNumber: reservation.point_number,
+          imageNumber: reservation.image_number,
+          source: "messenger",
           evidenceId: id,
           sha256: sha,
           mimeType: mime,
@@ -325,21 +357,24 @@ Deno.serve(async (req: Request) => {
         uploaded.byteSize !== photo.length ||
         uploaded.mimeType !== mime ||
         !uploaded.fileId
-      )
+      ) {
         throw Error("INVALID_IMAGE");
+      }
       const { error: finalError } = await admin.rpc(
         "messenger_finalize_evidence",
         { p_id: id, p_actor: userId, p_drive_id: uploaded.fileId },
       );
-      if (finalError)
+      if (finalError) {
         return reply(409, {
           message: "งานเปลี่ยนแปลงระหว่างแนบภาพ กรุณาโหลดข้อมูลใหม่",
         });
+      }
     }
     return reply(200, { id });
   } catch (e) {
-    if (e instanceof Error && e.message === "TOO_LARGE")
+    if (e instanceof Error && e.message === "TOO_LARGE") {
       return reply(413, { message: "ภาพมีขนาดใหญ่เกินกำหนด" });
+    }
     // Never log authorization headers, image payloads, Google IDs or shared secrets.
     return reply(503, {
       message: "ยังยืนยันการแนบหรือโหลดภาพไม่ได้ กรุณาลองอีกครั้งด้วยไฟล์เดิม",

@@ -1,25 +1,52 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-const api = vi.hoisted(() => ({ load: vi.fn(), submit: vi.fn() }));
+const api = vi.hoisted(() => ({
+  load: vi.fn(),
+  submit: vi.fn(),
+  upload: vi.fn(),
+  finish: vi.fn(),
+}));
 vi.mock("./lib/public-requests", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("./lib/public-requests")>();
+  const original = await importOriginal<
+    typeof import("./lib/public-requests")
+  >();
   return {
     ...original,
     loadPublicMessengers: api.load,
     submitPublicRequest: api.submit,
+    uploadPublicPhoto: api.upload,
+    finishPublicPhotos: api.finish,
   };
 });
 import PublicRequest from "./PublicRequest";
+import { prepareImage } from "./lib/evidence";
+vi.mock("./lib/evidence", () => ({ prepareImage: vi.fn() }));
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+  vi.mocked(prepareImage).mockResolvedValue(
+    new Blob(["photo"], { type: "image/jpeg" }),
+  );
+  vi.stubGlobal(
+    "URL",
+    Object.assign(URL, {
+      createObjectURL: vi.fn(() => "blob:qa"),
+      revokeObjectURL: vi.fn(),
+    }),
+  );
   api.load.mockResolvedValue([{ id: "messenger-1", name: "Messenger One" }]);
 });
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 async function fill() {
   const u = userEvent.setup();
@@ -140,4 +167,40 @@ it("allows blank phone and address while requiring a master department and a dat
       },
     ],
   });
+});
+
+it("keeps a created job and identical photo IDs on retry until all attachments finish", async () => {
+  api.submit.mockResolvedValue({
+    code: "MSG-PHOTO",
+    uploadToken: "qa-only",
+    stops: [{ id: "stop-1", point: 1 }],
+  });
+  api.upload.mockRejectedValueOnce(new Error("timeout")).mockResolvedValue(
+    undefined,
+  );
+  api.finish.mockResolvedValue(undefined);
+  render(<PublicRequest />);
+  const u = await fill();
+  fireEvent.change(screen.getByLabelText("ภาพจุดที่ 1"), {
+    target: { files: [new File(["source"], "a.jpg", { type: "image/jpeg" })] },
+  });
+  await screen.findByRole("img", { name: "ภาพแนบ 1" });
+  await waitFor(() =>
+    expect(
+      screen.getByRole("button", { name: "ตรวจสอบก่อนส่ง →" }).matches(
+        ":disabled",
+      ),
+    ).toBe(false)
+  );
+  await u.click(screen.getByRole("button", { name: "ตรวจสอบก่อนส่ง →" }));
+  await u.click(screen.getByRole("button", { name: "ยืนยันส่งงาน" }));
+  const retry = await screen.findByRole("button", { name: "ตรวจผลการส่งอีกครั้ง" });
+  expect(screen.queryByRole("heading", { name: "ส่งงานเรียบร้อยแล้ว" })).toBeNull();
+  expect(api.finish).not.toHaveBeenCalled();
+  await u.click(retry);
+  await screen.findByRole("heading", { name: "ส่งงานเรียบร้อยแล้ว" });
+  expect(api.submit.mock.calls[1]).toEqual(api.submit.mock.calls[0]);
+  expect(api.upload.mock.calls[1]).toEqual(api.upload.mock.calls[0]);
+  expect(api.submit.mock.calls[0][0].photoCounts).toEqual([1]);
+  expect(api.finish).toHaveBeenCalledTimes(1);
 });

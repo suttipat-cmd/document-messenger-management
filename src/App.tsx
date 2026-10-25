@@ -27,6 +27,7 @@ export type Job = {
   person: string;
   requesterPhone?: string;
   jobDate?: string;
+  intakePending?: boolean;
   messengerName?: string;
   messengerId?: string;
   department: string;
@@ -346,6 +347,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         {!st.phone && " · ยังไม่มีเบอร์โทร"}
       </p>
       {st.note && <p className="reason">{st.note}</p>}
+      {remote && j.dbId && <EvidencePanel jobId={j.dbId} stopId={st.id} revision={j.events?.length}/>}
       {arranging && j.status === "active" ? (
         <div className="arrange-actions">
           <button
@@ -500,8 +502,8 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           ดูรายละเอียด
         </button>
         {j.status === "new" ? (
-          <button className="primary" onClick={() => accept(j)}>
-            รับงาน
+          <button className="primary" disabled={j.intakePending} onClick={() => accept(j)}>
+            {j.intakePending ? "กำลังรับภาพแนบ…" : "รับงาน"}
           </button>
         ) : j.status === "returning" ? (
           <button className="primary" onClick={() => open(j)}>
@@ -597,8 +599,8 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     มี {job.stops.length} จุดรับ–ส่ง
                     เมื่อรับงานแล้วคุณสามารถเลือกจุดและจัดลำดับได้เอง
                   </p>
-                  <button className="primary" onClick={() => accept(job)}>
-                    รับงานนี้ →
+                  <button className="primary" disabled={job.intakePending} onClick={() => accept(job)}>
+                    {job.intakePending ? "กำลังรับภาพผู้มอบหมาย…" : "รับงานนี้ →"}
                   </button>
                 </section>
               ) : null}

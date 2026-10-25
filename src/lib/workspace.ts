@@ -27,6 +27,7 @@ type DbJob = {
   requester: string;
   requester_phone: string;
   job_date: string;
+  intake_pending?: boolean;
   messenger_id: string;
   department: string;
   status: Job["status"];
@@ -100,6 +101,7 @@ export async function loadWorkspace(userId: string): Promise<Snapshot> {
         person: j.requester,
         requesterPhone: j.requester_phone,
         jobDate: j.job_date,
+        intakePending: !!j.intake_pending && Date.now()-Date.parse(j.created_at)<7200000,
         messengerId: j.messenger_id,
         messengerName: profiles.find((p) => p.id === j.messenger_id)
           ?.display_name,

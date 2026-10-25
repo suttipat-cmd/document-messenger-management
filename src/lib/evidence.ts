@@ -3,7 +3,8 @@ export type Evidence = {
   id: string;
   job_id: string;
   stop_id: string | null;
-  purpose: "stop" | "return";
+  purpose: "stop" | "return" | "assignment";
+  photo_date?: string | null;
   filename: string;
   mime_type: string;
   byte_size: number;
@@ -18,9 +19,11 @@ export async function evidenceList(
   if (!supabase) throw Error("กรุณาเข้าสู่ระบบใหม่");
   let q = supabase
     .from("messenger_evidence")
-    .select("id,job_id,stop_id,purpose,filename,mime_type,byte_size,created_at")
+    .select(
+      "id,job_id,stop_id,purpose,filename,mime_type,byte_size,created_at,photo_date",
+    )
     .eq("job_id", jobId)
-    .eq("purpose", purpose)
+    .in("purpose", purpose === "stop" ? ["stop", "assignment"] : [purpose])
     .order("created_at")
     .order("id");
   q = stopId ? q.eq("stop_id", stopId) : q.is("stop_id", null);
@@ -54,8 +57,9 @@ export async function evidenceReady() {
   return data?.ready === true;
 }
 export async function prepareImage(file: File): Promise<Blob> {
-  if (!file.size || file.size > 20 * 1024 * 1024)
+  if (!file.size || file.size > 20 * 1024 * 1024) {
     throw Error("เลือกภาพขนาดไม่เกิน 20 MB");
+  }
   let bitmap: ImageBitmap;
   try {
     bitmap = await createImageBitmap(file);
@@ -67,8 +71,9 @@ export async function prepareImage(file: File): Promise<Blob> {
       !bitmap.width ||
       !bitmap.height ||
       bitmap.width * bitmap.height > 48000000
-    )
+    ) {
       throw Error("ความละเอียดภาพสูงเกินไป");
+    }
     const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -83,10 +88,11 @@ export async function prepareImage(file: File): Promise<Blob> {
         (b) => (b ? resolve(b) : reject(Error("เตรียมภาพไม่สำเร็จ"))),
         "image/jpeg",
         0.85,
-      ),
+      )
     );
-    if (blob.size > MAX_IMAGE_BYTES)
+    if (blob.size > MAX_IMAGE_BYTES) {
       throw Error("ภาพยังใหญ่เกิน 2 MB กรุณาเลือกภาพอื่น");
+    }
     return blob;
   } finally {
     bitmap.close();
@@ -97,28 +103,34 @@ export async function evidenceUpload(
   stopId: string | undefined,
   purpose: "stop" | "return",
   blob: Blob,
+  photoDate?: string,
 ) {
   const bytes = await blob.arrayBuffer();
   const hash = await crypto.subtle.digest("SHA-256", bytes);
-  const sha = Array.from(new Uint8Array(hash), (x) =>
-    x.toString(16).padStart(2, "0"),
+  const sha = Array.from(
+    new Uint8Array(hash),
+    (x) => x.toString(16).padStart(2, "0"),
   ).join("");
   // Stable request ID lets the same prepared file resume after a lost response.
   const key = await crypto.subtle.digest(
     "SHA-256",
     new TextEncoder().encode(jobId + ":" + (stopId || "return") + ":" + sha),
   );
-  const v = Array.from(new Uint8Array(key), (x) =>
-    x.toString(16).padStart(2, "0"),
+  const v = Array.from(
+    new Uint8Array(key),
+    (x) => x.toString(16).padStart(2, "0"),
   )
     .join("")
     .slice(0, 32);
-  const id = `${v.slice(0, 8)}-${v.slice(8, 12)}-${v.slice(12, 16)}-${v.slice(16, 20)}-${v.slice(20)}`;
+  const id = `${v.slice(0, 8)}-${v.slice(8, 12)}-${v.slice(12, 16)}-${
+    v.slice(16, 20)
+  }-${v.slice(20)}`;
   const form = new FormData();
   form.set("id", id);
   form.set("jobId", jobId);
   form.set("purpose", purpose);
   if (stopId) form.set("stopId", stopId);
+  if (photoDate) form.set("photoDate", photoDate);
   form.set("file", blob, "evidence.jpg");
   return call(form);
 }
@@ -157,7 +169,8 @@ export async function evidenceRead(id: string): Promise<Blob> {
   if (
     !["image/jpeg", "image/png", "image/webp"].includes(blob.type) ||
     blob.size > MAX_IMAGE_BYTES
-  )
+  ) {
     throw Error("โหลดภาพไม่สำเร็จ");
+  }
   return blob;
 }
