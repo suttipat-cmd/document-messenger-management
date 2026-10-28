@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { useEffect } from "react";
 import type { ReactNode } from "react";
 import Icon from "./Icon";
@@ -36,9 +37,9 @@ export function Toast({
   return (
     <div className="ds-toast">
       <Alert tone="success">{message}</Alert>
-      <button aria-label="ปิดการแจ้งเตือน" onClick={onClose}>
+      <Button aria-label="ปิดการแจ้งเตือน" onClick={onClose}>
         <Icon name="close" size={18} />
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { useEffect, useId, useRef } from "react";
 import type { ReactNode } from "react";
 import Icon from "./Icon";
@@ -40,7 +41,7 @@ export default function Dialog({
     >
       <header>
         <h2 id={id}>{title}</h2>
-        <button
+        <Button
           type="button"
           disabled={busy}
           className="ds-icon-button"
@@ -48,7 +49,7 @@ export default function Dialog({
           onClick={onClose}
         >
           <Icon name="close" />
-        </button>
+        </Button>
       </header>
       {children}
     </dialog>

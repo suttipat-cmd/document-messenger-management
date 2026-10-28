@@ -1,0 +1,98 @@
+/* Shared sizing contract. Role-specific layouts remain in App.css. */
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --control-height: 40px;
+  --panel-padding: 16px;
+}
+.ds-button { font-family: inherit; overflow-wrap: anywhere; }
+.ds-button:is(.primary,.secondary,.action-primary), .form-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  line-height: 1.5;
+  text-align: center;
+  text-decoration: none;
+  max-width: 100%;
+}
+.ds-button > .ds-icon, .ds-button > .spinner { flex-shrink: 0; }
+:is(.app,.public-main,.management-shell,.auth-shell) .field {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: start;
+  align-items: baseline;
+  gap: 6px 4px;
+  min-width: 0;
+  margin-block: 12px;
+  font-size: var(--text-body);
+}
+.field > :is(input,select,textarea), .field > .field-error {
+  flex-basis: 100%;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+:is(.field,.management-toolbar,.management-date-filters) :is(input:not([type=checkbox]):not([type=radio]),select) {
+  min-height: var(--control-height);
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.field textarea { padding: 10px; min-height: 88px; resize: vertical; }
+:is(.app,.public-main) .panel { padding: var(--panel-padding); border-radius: var(--radius); }
+:is(.panel,.ds-dialog,.management-detail) > h2 { margin-block: 0 12px; }
+:is(.panel,.ds-dialog) > p { margin-block: 8px 12px; }
+:is(.task,.route-card) { padding: var(--panel-padding); border-radius: var(--radius); }
+:is(.public-fields,.management-toolbar,.management-date-filters,.route-actions,.dialog-actions) { gap: var(--space-3); }
+:is(.public-fields,.management-detail dl,.review-data) > * { min-width: 0; }
+.management-topbar { gap: 16px; flex-wrap: wrap; }
+.management-actions { gap: 8px; flex-wrap: wrap; }
+.management-row { padding-block: 12px; }
+.management-row b { margin-top: 0; }
+.management-filters { padding: var(--panel-padding); gap: var(--space-3); }
+.management-toolbar { flex-wrap: wrap; }
+.management-toolbar input { flex: 1 1 240px; width: auto; }
+.management-toolbar select { flex: 0 1 180px; max-width: 100%; }
+.management-date-filters { flex-wrap: wrap; align-items: end; }
+.management-date-filters label { min-width: 0; }
+.ds-pagination { gap: 12px; flex-wrap: wrap; }
+.ds-dialog { padding: 20px; max-width: min(560px,calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; }
+.ds-dialog header { margin-bottom: 16px; gap: 12px; }
+.ds-dialog header h2 { margin: 0; }
+.ds-dialog .dialog-actions { margin-top: 16px; gap: 8px; }
+.evidence-group h4 { font-size: var(--text-body); font-weight: var(--weight-heading); }
+.evidence-thumb > div { font-size: var(--text-caption); background: var(--canvas); }
+.evidence-preview { background: var(--canvas); border-color: var(--border); border-radius: var(--radius); }
+.evidence-thumb figcaption { font-size: var(--text-caption); color: var(--muted); overflow-wrap: anywhere; }
+.evidence-gallery { gap: var(--space-2); }
+.evidence-actions { flex-wrap: wrap; gap: var(--space-2); }
+.evidence-error { font-size: var(--text-body); overflow-wrap: anywhere; }
+.required-mark { margin: 0; }
+@media (max-width:800px) {
+  :root { --control-height: 44px; --panel-padding: 14px; }
+  .ds-button:is(.primary,.secondary,.action-primary), .form-link { min-height: var(--control-height); }
+  .ds-icon-button { min-width: 44px; min-height: 44px; }
+  .management-toolbar select { flex: 1 1 140px; }
+  .management-topbar { gap: 12px; }
+  .management-date-filters label { flex: 1 1 140px; }
+  .public-main { padding-inline: 16px; }
+  .ds-dialog { padding: 16px; }
+  .ds-dialog.ds-sheet { max-width: 100%; }
+  .evidence-gallery { grid-template-columns: repeat(auto-fill,minmax(100px,1fr)); }
+}
+@media (prefers-reduced-motion:reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0s !important; }
+}
+/* Grid forms own their row gaps; labels must not add a second gap. */
+.public-main .panel > .field,
+.public-main .public-fields > .field,
+.compact-form .field,
+.profile-editor .field { margin-block: 0; }
+.public-main .public-fields { gap: var(--space-3); }
+.public-main .panel > h2 { margin-bottom: 0; }

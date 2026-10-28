@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { useEffect, useRef, useState } from "react";
 import { prepareImage } from "../lib/evidence";
 export type DraftPhoto = { id: string; blob: Blob; url: string };
@@ -67,7 +68,7 @@ export default function DraftPhotos({
               <img src={p.url} alt={`ภาพแนบ ${i + 1}`} />
             </div>
             {!readOnly && (
-              <button
+              <Button
                 type="button"
                 className="back"
                 disabled={busy}
@@ -77,7 +78,7 @@ export default function DraftPhotos({
                 }}
               >
                 ลบภาพ {i + 1}
-              </button>
+              </Button>
             )}
           </figure>
         ))}
@@ -96,14 +97,14 @@ export default function DraftPhotos({
               e.target.value = "";
             }}
           />
-          <button
+          <Button
             type="button"
             className="secondary"
             disabled={busy || photos.length >= 5}
             onClick={() => input.current?.click()}
           >
             เลือกภาพ
-          </button>
+          </Button>
         </>
       )}
       {busy && <p role="status">กำลังเตรียมภาพ…</p>}

@@ -1,3 +1,4 @@
+import Button from "./ui/Button";
 import EvidencePanel from "./ui/EvidenceBoundary";
 import { useState } from "react";
 import type { ReactNode } from "react";
@@ -159,7 +160,7 @@ export default function Manager({
             <b className="sidebar-label">บริหารงานรับ/ส่งเอกสาร</b>
           </a>
           <nav aria-label="เมนูจัดการ">
-            <button
+            <Button
               aria-label="งานทั้งหมด"
               title="งานทั้งหมด"
               className={tab === "jobs" ? "selected" : ""}
@@ -168,9 +169,9 @@ export default function Manager({
               <Icon name="jobs" size={18} />{" "}
               <span className="sidebar-label">งานทั้งหมด</span>
               <span className="sidebar-count">{snapshot.jobs.length}</span>
-            </button>
+            </Button>
             {snapshot.profile?.role === "admin" && (
-              <button
+              <Button
                 aria-label="บัญชีผู้ใช้"
                 title="บัญชีผู้ใช้"
                 className={tab === "users" ? "selected" : ""}
@@ -178,7 +179,7 @@ export default function Manager({
               >
                 <Icon name="account" size={18} />{" "}
                 <span className="sidebar-label">บัญชีผู้ใช้</span>
-              </button>
+              </Button>
             )}
           </nav>
           <div className="management-account">
@@ -192,7 +193,7 @@ export default function Manager({
             <small className="sidebar-label">
               {snapshot.profile?.role === "admin" ? "ผู้ดูแลระบบ" : "ผู้จัดการงาน"}
             </small>
-            <button
+            <Button
               disabled={busy}
               onClick={onLogout}
               aria-label="ออกจากระบบ"
@@ -200,7 +201,7 @@ export default function Manager({
             >
               <Icon name="logout" />
               <span className="sidebar-label">ออกจากระบบ</span>
-            </button>
+            </Button>
           </div>
         </aside>
       </div>
@@ -210,13 +211,13 @@ export default function Manager({
             <h1>{tab === "users" ? "บัญชีผู้ใช้" : "งานทั้งหมด"}</h1>
           </div>
           <div className="management-actions">
-            <button className="secondary" disabled={busy} onClick={onRefresh}>
+            <Button className="secondary" disabled={busy} onClick={onRefresh}>
               {busy ? <Loading /> : (
                 <>
                   <Icon name="refresh" size={16} /> โหลดใหม่
                 </>
               )}
-            </button>
+            </Button>
             <a
               className="primary form-link"
               href="https://suttipat-cmd.github.io/document-messenger-management/#/request"
@@ -231,7 +232,7 @@ export default function Manager({
             <>
               <div className="management-stats">
                 {(["new", "active", "returning", "done"] as const).map((s) => (
-                  <button
+                  <Button
                     key={s}
                     className={"summary-status " + s +
                       (status === s ? " selected" : "")}
@@ -241,7 +242,7 @@ export default function Manager({
                     <strong>
                       {snapshot.jobs.filter((j) => j.status === s).length}
                     </strong>
-                  </button>
+                  </Button>
                 ))}
               </div>
               <section className="management-list">
@@ -313,7 +314,7 @@ export default function Manager({
                         onChange={(e) => setTo(e.target.value)}
                       />
                     </label>
-                    <button
+                    <Button
                       className="filter-quick"
                       onClick={() => {
                         const d = today();
@@ -322,11 +323,11 @@ export default function Manager({
                       }}
                     >
                       วันนี้
-                    </button>
+                    </Button>
                     {filtered && (
-                      <button className="filter-clear" onClick={resetFilters}>
+                      <Button className="filter-clear" onClick={resetFilters}>
                         ล้างตัวกรอง
-                      </button>
+                      </Button>
                     )}
                     <span className="filter-count" role="status">
                       {filtered
@@ -343,12 +344,12 @@ export default function Manager({
                             className="ds-tooltip"
                             data-tooltip={"ลบ " + c.label}
                           >
-                            <button
+                            <Button
                               aria-label={"ลบตัวกรอง " + c.label}
                               onClick={c.clear}
                             >
                               <Icon name="close" size={14} />
-                            </button>
+                            </Button>
                           </span>
                         </span>
                       ))}
@@ -383,7 +384,7 @@ export default function Manager({
                     ))}
                   </div>
                   {visibleJobs.map((j, index) => (
-                    <button
+                    <Button
                       key={j.id}
                       className={"management-row job-status-" +
                         j.status +
@@ -420,7 +421,7 @@ export default function Manager({
                           max={j.stops.length || 1}
                         />
                       </span>
-                    </button>
+                    </Button>
                   ))}
                 </div>
                 {!jobs.length && (
@@ -433,9 +434,9 @@ export default function Manager({
                       : "เริ่มมอบหมายงานผ่านแบบฟอร์ม"}
                     action={snapshot.jobs.length
                       ? (
-                        <button className="secondary" onClick={resetFilters}>
+                        <Button className="secondary" onClick={resetFilters}>
                           ล้างตัวกรอง
-                        </button>
+                        </Button>
                       )
                       : (
                         <a
@@ -470,34 +471,34 @@ export default function Manager({
                       {jobs.length} งาน
                     </span>
                     <nav aria-label="แบ่งหน้างาน">
-                      <button
+                      <Button
                         aria-label="หน้าก่อนหน้า"
                         disabled={page === 1}
                         onClick={() => goPage(page - 1)}
                       >
                         <Icon name="back" size={16} />
-                      </button>
+                      </Button>
                       {Array.from(
                         { length: Math.min(5, pageCount) },
                         (_, i) =>
                           Math.max(1, Math.min(page - 2, pageCount - 4)) + i,
                       ).map((n) => (
-                        <button
+                        <Button
                           key={n}
                           aria-label={"หน้า " + n}
                           aria-current={n === page ? "page" : undefined}
                           onClick={() => goPage(n)}
                         >
                           {n}
-                        </button>
+                        </Button>
                       ))}
-                      <button
+                      <Button
                         aria-label="หน้าถัดไป"
                         disabled={page === pageCount}
                         onClick={() => goPage(page + 1)}
                       >
                         <Icon name="chevron" size={16} />
-                      </button>
+                      </Button>
                     </nav>
                   </div>
                 )}
@@ -540,12 +541,12 @@ function JobPanel({
     <aside className="management-detail" aria-label="รายละเอียดงาน">
       <header>
         <span className="code">{job.id}</span>
-        <button aria-label="ปิดรายละเอียด" onClick={onClose}>
+        <Button aria-label="ปิดรายละเอียด" onClick={onClose}>
           <Icon name="close" />
-        </button>
+        </Button>
       </header>
       <nav className="ds-breadcrumb" aria-label="เส้นทางนำทาง">
-        <button onClick={onClose}>งานทั้งหมด</button>
+        <Button onClick={onClose}>งานทั้งหมด</Button>
         <Icon name="chevron" size={12} />
         <span>{job.id}</span>
       </nav>
@@ -556,7 +557,7 @@ function JobPanel({
           ["details", "รายละเอียด"],
           ["history", "ประวัติ"],
         ].map(([id, label]) => (
-          <button
+          <Button
             id={"tab-" + id}
             role="tab"
             key={id}
@@ -574,7 +575,7 @@ function JobPanel({
             tabIndex={detailTab === id ? 0 : -1}
           >
             {label}
-          </button>
+          </Button>
         ))}
       </div>
       <div
@@ -602,13 +603,13 @@ function JobPanel({
           <dd>{job.messengerName || "—"}</dd>
         </dl>
         {job.status === "new" && (
-          <button
+          <Button
             className="primary"
             disabled={busy}
             onClick={() => void run("accept")}
           >
             {busy ? <Loading label="กำลังบันทึก…" /> : "รับงาน"}
-          </button>
+          </Button>
         )}
         <h3>จุดรับ–ส่ง</h3>
         {job.stops.map((s, i) => (

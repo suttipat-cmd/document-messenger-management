@@ -1,3 +1,4 @@
+import Button from "./Button";
 import { useEffect, useState } from "react";
 import { evidenceRead } from "../lib/evidence";
 import type { Evidence } from "../lib/evidence";
@@ -50,20 +51,20 @@ export default function EvidenceImage(
     <figure className="evidence-thumb">
       {url
         ? (
-          <button
+          <Button
             type="button"
             className="evidence-preview"
             aria-label={`ขยายภาพ ${index + 1}`}
             onClick={() => setOpen(true)}
           >
             <img src={url} alt={`ภาพแนบ ${index + 1}`} />
-          </button>
+          </Button>
         )
         : error
         ? (
           <div role="alert">
             {error}
-            <button
+            <Button
               type="button"
               className="back"
               onClick={() => {
@@ -72,7 +73,7 @@ export default function EvidenceImage(
               }}
             >
               ลองใหม่
-            </button>
+            </Button>
           </div>
         )
         : <div role="status">กำลังโหลดภาพ…</div>}

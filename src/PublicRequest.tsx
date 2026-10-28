@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import DraftPhotos from "./ui/DraftPhotos";
 import type { DraftPhoto } from "./ui/DraftPhotos";
 import ValidatedForm from "./ui/ValidatedForm";
@@ -183,9 +185,9 @@ export default function PublicRequest() {
                 งานเข้ากองงานของ ผู้รับส่งเอกสารที่เลือกแล้ว
                 กรุณาเก็บเลขงานนี้ไว้สำหรับติดต่อผู้รับผิดชอบ
               </p>
-              <button className="primary" onClick={reset}>
+              <Button className="primary" onClick={reset}>
                 สร้างงานใหม่
-              </button>
+              </Button>
             </section>
           )
           : (
@@ -240,7 +242,7 @@ export default function PublicRequest() {
                         ข้อมูลถูกล็อกชั่วคราวเพื่อป้องกันงานซ้ำ กดส่งอีกครั้งเพื่อตรวจคำขอเดิม
                       </p>
                     )}
-                    <button
+                    <Button
                       className="primary"
                       disabled={busy}
                       onClick={() => void send()}
@@ -254,8 +256,8 @@ export default function PublicRequest() {
                         : (
                           "ยืนยันส่งงาน"
                         )}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       className="secondary"
                       disabled={busy || uncertain}
                       onClick={() => {
@@ -265,7 +267,7 @@ export default function PublicRequest() {
                       }}
                     >
                       กลับไปแก้ไขข้อมูล
-                    </button>
+                    </Button>
                   </>
                 )
                 : (
@@ -291,7 +293,7 @@ export default function PublicRequest() {
                     <fieldset disabled={photoBusy} className="intake-fields">
                       <section className="panel">
                         <h2>รายละเอียดงาน</h2>
-                        <label className="field">
+                        <Field>
                           ชื่องาน <Required />
                           <input
                             required
@@ -301,9 +303,9 @@ export default function PublicRequest() {
                               setForm({ ...form, title: e.target.value })}
                             placeholder="เช่น รับ–ส่งเอกสารฝ่ายบัญชี"
                           />
-                        </label>
+                        </Field>
                         <div className="public-fields">
-                          <label className="field">
+                          <Field>
                             ชื่อผู้มอบหมาย <Required />
                             <input
                               required
@@ -313,8 +315,8 @@ export default function PublicRequest() {
                               onChange={(e) =>
                                 setForm({ ...form, requester: e.target.value })}
                             />
-                          </label>
-                          <label className="field">
+                          </Field>
+                          <Field>
                             เบอร์ติดต่อผู้มอบหมาย
                             <input
                               type="tel"
@@ -327,9 +329,9 @@ export default function PublicRequest() {
                                   requesterPhone: e.target.value,
                                 })}
                             />
-                          </label>
+                          </Field>
                         </div>
-                        <label className="field">
+                        <Field>
                           แผนก <Required />
                           <select
                             required
@@ -341,8 +343,8 @@ export default function PublicRequest() {
                             {departments.map((d) => <option key={d}>{d}
                             </option>)}
                           </select>
-                        </label>
-                        <label className="field">
+                        </Field>
+                        <Field>
                           วันที่ <Required />
                           <input
                             type="date"
@@ -353,8 +355,8 @@ export default function PublicRequest() {
                             onChange={(e) =>
                               setForm({ ...form, jobDate: e.target.value })}
                           />
-                        </label>
-                        <label className="field">
+                        </Field>
+                        <Field>
                           ผู้รับส่งเอกสาร <Required />
                           <select
                             required
@@ -372,13 +374,13 @@ export default function PublicRequest() {
                               </option>
                             ))}
                           </select>
-                        </label>
+                        </Field>
                         {!loading && !options.length && (
                           <p className="auth-message">
                             ยังไม่มีผู้รับส่งเอกสาร พร้อมรับงาน กรุณาติดต่อผู้ดูแลก่อนส่งงาน
                           </p>
                         )}
-                        <button
+                        <Button
                           type="button"
                           className="back"
                           disabled={loading}
@@ -387,7 +389,7 @@ export default function PublicRequest() {
                           {loading ? <Loading label="กำลังโหลด…" /> : (
                             "โหลดรายชื่อใหม่"
                           )}
-                        </button>
+                        </Button>
                       </section>
                       <div className="section-title">
                         <h2>จุดรับ–ส่ง ({form.stops.length})</h2>
@@ -398,7 +400,7 @@ export default function PublicRequest() {
                           <div className="row">
                             <h2>จุดที่ {i + 1}</h2>
                             {form.stops.length > 1 && (
-                              <button
+                              <Button
                                 type="button"
                                 className="mode-button"
                                 aria-label={`ลบจุดที่ ${i + 1}`}
@@ -416,10 +418,10 @@ export default function PublicRequest() {
                                 }}
                               >
                                 ลบจุด
-                              </button>
+                              </Button>
                             )}
                           </div>
-                          <label className="field">
+                          <Field>
                             ประเภทจุดที่ {i + 1} <Required />
                             <select
                               required
@@ -430,8 +432,8 @@ export default function PublicRequest() {
                               <option>รับเอกสาร</option>
                               <option>ส่งเอกสาร</option>
                             </select>
-                          </label>
-                          <label className="field">
+                          </Field>
+                          <Field>
                             ชื่อสถานที่จุดที่ {i + 1} <Required />
                             <input
                               required
@@ -440,8 +442,8 @@ export default function PublicRequest() {
                               onChange={(e) =>
                                 patchStop(i, { name: e.target.value })}
                             />
-                          </label>
-                          <label className="field">
+                          </Field>
+                          <Field>
                             ที่อยู่จุดที่ {i + 1}
                             <textarea
                               maxLength={1000}
@@ -450,7 +452,7 @@ export default function PublicRequest() {
                               onChange={(e) =>
                                 patchStop(i, { address: e.target.value })}
                             />
-                          </label>
+                          </Field>
                           <DraftPhotos
                             photos={photos[i]}
                             onChange={(items) => patchPhotos(i, items)}
@@ -459,7 +461,7 @@ export default function PublicRequest() {
                           />
                           <details className="optional-contact">
                             <summary>เพิ่มผู้ติดต่อที่จุดนี้ (ถ้ามี)</summary>
-                            <label className="field">
+                            <Field>
                               ผู้ติดต่อจุดที่ {i + 1}
                               <input
                                 maxLength={120}
@@ -467,8 +469,8 @@ export default function PublicRequest() {
                                 onChange={(e) =>
                                   patchStop(i, { contact: e.target.value })}
                               />
-                            </label>
-                            <label className="field">
+                            </Field>
+                            <Field>
                               เบอร์ติดต่อจุดที่ {i + 1}
                               <input
                                 type="tel"
@@ -477,11 +479,11 @@ export default function PublicRequest() {
                                 onChange={(e) =>
                                   patchStop(i, { phone: e.target.value })}
                               />
-                            </label>
+                            </Field>
                           </details>
                         </section>
                       ))}
-                      <button
+                      <Button
                         type="button"
                         className="secondary"
                         disabled={form.stops.length >= 20}
@@ -497,7 +499,7 @@ export default function PublicRequest() {
                         }}
                       >
                         + เพิ่มจุดรับ–ส่ง
-                      </button>
+                      </Button>
                       <div className="honeypot" aria-hidden="true">
                         <label>
                           Website
@@ -510,12 +512,12 @@ export default function PublicRequest() {
                           />
                         </label>
                       </div>
-                      <button
+                      <Button
                         className="primary"
                         disabled={loading || !options.length}
                       >
                         ตรวจสอบก่อนส่ง →
-                      </button>
+                      </Button>
                     </fieldset>
                   </ValidatedForm>
                 )}

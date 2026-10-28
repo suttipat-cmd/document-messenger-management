@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import Dialog from "./ui/Dialog";
 import EvidencePanel from "./ui/EvidenceBoundary";
 import Icon from "./ui/Icon";
@@ -298,9 +300,9 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         placeholder="ค้นหาเลขงาน สถานที่ หรือผู้มอบหมาย"
       />
       {search && (
-        <button aria-label="ล้างคำค้นหา" onClick={() => setSearch("")}>
+        <Button aria-label="ล้างคำค้นหา" onClick={() => setSearch("")}>
           ×
-        </button>
+        </Button>
       )}
     </label>
   );
@@ -350,22 +352,22 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
       {remote && j.dbId && <EvidencePanel jobId={j.dbId} stopId={st.id} revision={j.events?.length}/>}
       {arranging && j.status === "active" ? (
         <div className="arrange-actions">
-          <button
+          <Button
             className="secondary"
             aria-label={`เลื่อน ${st.name} ขึ้น`}
             disabled={index === 0}
             onClick={() => move(st.id, -1, visibleIds)}
           >
             ↑ ขึ้น
-          </button>
-          <button
+          </Button>
+          <Button
             className="secondary"
             aria-label={`เลื่อน ${st.name} ลง`}
             disabled={index === visibleIds.length - 1}
             onClick={() => move(st.id, 1, visibleIds)}
           >
             ↓ ลง
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="route-actions">
@@ -374,9 +376,9 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
               โทร
             </a>
           ) : (
-            <button disabled aria-label="ยังไม่มีเบอร์โทร">
+            <Button disabled aria-label="ยังไม่มีเบอร์โทร">
               โทร
-            </button>
+            </Button>
           )}
           <a
             className="action-link"
@@ -389,7 +391,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           >
             นำทาง ↗
           </a>
-          <button
+          <Button
             className="action-primary"
             disabled={j.status === "new"}
             onClick={() => openStop(j, st)}
@@ -397,7 +399,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             {st.status === "done" || j.status === "done"
               ? "ดูหลักฐาน"
               : "ดำเนินการ"}
-          </button>
+          </Button>
         </div>
       )}
     </article>
@@ -498,19 +500,19 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         </p>
       )}
       <div className="card-actions">
-        <button className="secondary" onClick={() => open(j)}>
+        <Button className="secondary" onClick={() => open(j)}>
           ดูรายละเอียด
-        </button>
+        </Button>
         {j.status === "new" ? (
-          <button className="primary" disabled={j.intakePending} onClick={() => accept(j)}>
+          <Button className="primary" disabled={j.intakePending} onClick={() => accept(j)}>
             {j.intakePending ? "กำลังรับภาพแนบ…" : "รับงาน"}
-          </button>
+          </Button>
         ) : j.status === "returning" ? (
-          <button className="primary" onClick={() => open(j)}>
+          <Button className="primary" onClick={() => open(j)}>
             ยืนยันคืนเอกสาร
-          </button>
+          </Button>
         ) : j.status === "active" ? (
-          <button
+          <Button
             className="primary"
             onClick={() => {
               const next = sortStops(j.stops).find(
@@ -521,7 +523,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             }}
           >
             ทำต่อ →
-          </button>
+          </Button>
         ) : null}
       </div>
     </article>
@@ -557,14 +559,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           {notice && (
             <div role="status" className="notice">
               {notice}
-              <button aria-label="ปิดข้อความ" onClick={() => setNotice("")}>
+              <Button aria-label="ปิดข้อความ" onClick={() => setNotice("")}>
                 <Icon name="close" size={16} />
-              </button>
+              </Button>
             </div>
           )}
           {job ? (
             <>
-              <button className="back" onClick={back}>
+              <Button className="back" onClick={back}>
                 ←{" "}
                 {stop
                   ? stopOrigin === "details"
@@ -573,7 +575,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       ? "กลับจุดรับ–ส่ง"
                       : "กลับรายการงาน"
                   : "กลับรายการ"}
-              </button>
+              </Button>
               <div className="row">
                 <span className="eyebrow">{job.id}</span>
                 <span className={"status " + job.status}>
@@ -599,9 +601,9 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     มี {job.stops.length} จุดรับ–ส่ง
                     เมื่อรับงานแล้วคุณสามารถเลือกจุดและจัดลำดับได้เอง
                   </p>
-                  <button className="primary" disabled={job.intakePending} onClick={() => accept(job)}>
+                  <Button className="primary" disabled={job.intakePending} onClick={() => accept(job)}>
                     {job.intakePending ? "กำลังรับภาพผู้มอบหมาย…" : "รับงานนี้ →"}
-                  </button>
+                  </Button>
                 </section>
               ) : null}
               {job.status === "returning" ? (
@@ -621,13 +623,13 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     editable
                     onBusy={setEvidenceBusy}
                   />
-                  <button
+                  <Button
                     className="primary"
                     disabled={!!remote?.saving || evidenceBusy}
                     onClick={() => setReturnConfirmation(true)}
                   >
                     ยืนยันคืนเอกสารและปิดงาน
-                  </button>
+                  </Button>
                 </section>
               ) : stop ? (
                 <section className="panel">
@@ -665,7 +667,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     </>
                   ) : (
                     <>
-                      <label className="field">
+                      <Field>
                         หมายเหตุ / เหตุผลที่ทำไม่สำเร็จ
                         <textarea
                           value={note}
@@ -673,32 +675,32 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                           placeholder="กรอกเมื่อมีข้อมูลเพิ่มเติม"
                           rows={3}
                         />
-                      </label>
-                      <button
+                      </Field>
+                      <Button
                         className="primary"
                         disabled={!!remote?.saving || evidenceBusy}
                         onClick={completeStop}
                       >
                         ยืนยันดำเนินการสำเร็จ ✓
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="secondary mobile-action-trigger"
                         onClick={() => setActions(true)}
                       >
                         <Icon name="more" /> ตัวเลือกเพิ่มเติม
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="secondary stop-secondary-action"
                         onClick={retry}
                       >
                         เก็บไว้กลับมาทำใหม่
-                      </button>
-                      <button
+                      </Button>
+                      <Button
                         className="text-danger stop-secondary-action"
                         onClick={returnJob}
                       >
                         นำเอกสารกลับคืนผู้มอบหมาย
-                      </button>
+                      </Button>
                     </>
                   )}
                 </section>
@@ -724,13 +726,13 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                   <div className="section-title">
                     <h2>จุดรับ–ส่ง</h2>
                     {job.status === "active" && (
-                      <button
+                      <Button
                         className="mode-button"
                         aria-pressed={arranging}
                         onClick={() => setArranging(!arranging)}
                       >
                         {arranging ? "✓ เสร็จแล้ว" : "⇅ จัดลำดับ"}
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <p className="hint">
@@ -823,7 +825,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     ["done", "สำเร็จ"],
                   ] as const
                 ).map(([status, title]) => (
-                  <button
+                  <Button
                     key={status}
                     className={"stat " + status}
                     onClick={() => {
@@ -836,11 +838,11 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     <strong>
                       {jobs.filter((j) => j.status === status).length}
                     </strong>
-                  </button>
+                  </Button>
                 ))}
               </div>
               {resume && (
-                <button
+                <Button
                   className="resume"
                   onClick={() => {
                     const next = sortStops(resume.stops).find(
@@ -859,7 +861,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     </b>
                   </span>
                   <span aria-hidden="true">→</span>
-                </button>
+                </Button>
               )}
               {searchBox}
               <div className="filters four" aria-label="กรองสถานะ">
@@ -869,7 +871,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                   ["active", "กำลังทำ"],
                   ["returning", "รอคืน"],
                 ].map(([v, label]) => (
-                  <button
+                  <Button
                     key={v}
                     aria-pressed={filter === v}
                     className={filter === v ? "selected" : ""}
@@ -882,7 +884,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                           .length
                       }
                     </small>
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="section-title">
@@ -913,7 +915,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                   ["ส่งเอกสาร", "จุดส่ง"],
                   ["retry", "ทำใหม่"],
                 ].map(([v, title]) => (
-                  <button
+                  <Button
                     key={v}
                     className={stopFilter === v ? "selected" : ""}
                     aria-pressed={stopFilter === v}
@@ -923,19 +925,19 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                     }}
                   >
                     {title}
-                  </button>
+                  </Button>
                 ))}
               </div>
               <div className="section-title">
                 <h2>เหลือ {shownRoute.length} จุด</h2>
-                <button
+                <Button
                   className="mode-button"
                   disabled={shownRoute.length < 2}
                   aria-pressed={arranging}
                   onClick={() => setArranging(!arranging)}
                 >
                   {arranging ? "✓ เสร็จแล้ว" : "⇅ จัดลำดับ"}
-                </button>
+                </Button>
               </div>
               {arranging && (
                 <p className="hint">
@@ -1029,12 +1031,12 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                 <section className="panel">
                   <h2>การเข้าสู่ระบบ</h2>
 
-                  <button
+                  <Button
                     className="secondary"
                     onClick={() => void remote.onLogout()}
                   >
                     ออกจากระบบ
-                  </button>
+                  </Button>
                 </section>
               ) : (
                 <>
@@ -1044,7 +1046,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       ล้างความคืบหน้าและรูปชั่วคราว
                       แล้วกลับไปใช้ข้อมูลตัวอย่างเริ่มต้น
                     </p>
-                    <button
+                    <Button
                       className="secondary"
                       onClick={() => {
                         setJobs(initial);
@@ -1061,7 +1063,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
                       }}
                     >
                       รีเซ็ตข้อมูลตัวอย่าง
-                    </button>
+                    </Button>
                   </section>
                   <p className="hint">ข้อมูลตัวอย่าง</p>
                 </>
@@ -1079,22 +1081,22 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
         >
           <p>{stop.name}</p>
           <div className="sheet-actions">
-            <button
+            <Button
               onClick={() => {
                 setActions(false);
                 retry();
               }}
             >
               เก็บไว้กลับมาทำใหม่
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={() => {
                 setActions(false);
                 returnJob();
               }}
             >
               นำเอกสารกลับคืนผู้มอบหมาย
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
@@ -1109,14 +1111,14 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
             งานจะถูกปิด
           </p>
           <div className="dialog-actions">
-            <button
+            <Button
               className="secondary"
               disabled={!!remote?.saving || evidenceBusy}
               onClick={() => setReturnConfirmation(false)}
             >
               ยกเลิก
-            </button>
-            <button
+            </Button>
+            <Button
               className="primary"
               disabled={!!remote?.saving || evidenceBusy}
               onClick={async () => {
@@ -1136,13 +1138,13 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
               }}
             >
               ยืนยันคืนเอกสารแล้ว
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
       <nav className="bottom" aria-label="เมนูหลัก">
         {(["jobs", "stops", "history", "account"] as Tab[]).map((t, i) => (
-          <button
+          <Button
             key={t}
             disabled={!!remote?.saving || evidenceBusy}
             className={tab === t ? "current" : ""}
@@ -1151,7 +1153,7 @@ export default function App({ remote }: { remote?: RemoteWorkspace } = {}) {
           >
             {icon(t)}
             <span>{["งานของฉัน", "จุดรับ–ส่ง", "ประวัติ", "บัญชี"][i]}</span>
-          </button>
+          </Button>
         ))}
       </nav>
     </div>

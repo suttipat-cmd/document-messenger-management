@@ -1,3 +1,5 @@
+import Field from "./Field";
+import Button from "./Button";
 import { useEffect, useRef, useState } from "react";
 import {
   evidenceList,
@@ -103,10 +105,10 @@ export default function EvidencePanel({
   if (!jobId) {
     return (
       <div className="photo-box">
-        <button className="camera" disabled>
+        <Button className="camera" disabled>
           <Icon name="camera" />
           แนบรูปหลักฐาน
-        </button>
+        </Button>
       </div>
     );
   }
@@ -118,7 +120,7 @@ export default function EvidencePanel({
             items.filter((x) => x.purpose !== "assignment").length < 5 &&
             (
               <>
-                <label className="field">
+                <Field>
                   วันที่แนบภาพ <Required />
                   <input
                     type="date"
@@ -129,7 +131,7 @@ export default function EvidencePanel({
                     disabled={busy || !!pending}
                     onChange={(e) => setPhotoDate(e.target.value)}
                   />
-                </label>
+                </Field>
                 <div className="evidence-actions">
                   <input
                     ref={camera}
@@ -154,7 +156,7 @@ export default function EvidencePanel({
                       e.target.value = "";
                     }}
                   />
-                  <button
+                  <Button
                     type="button"
                     className="secondary"
                     disabled={busy || !photoDate}
@@ -162,22 +164,22 @@ export default function EvidencePanel({
                   >
                     <Icon name="camera" size={18} />
                     ถ่ายรูป
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
                     className="secondary"
                     disabled={busy || !photoDate}
                     onClick={() => picker.current?.click()}
                   >
                     เลือกภาพ
-                  </button>
+                  </Button>
                 </div>
               </>
             )}
           {editable && !ready && !error && (
             <p className="hint">
               ระบบแนบภาพยังไม่พร้อม{" "}
-              <button
+              <Button
                 type="button"
                 className="back"
                 disabled={busy}
@@ -189,7 +191,7 @@ export default function EvidencePanel({
                 }}
               >
                 ตรวจสอบอีกครั้ง
-              </button>
+              </Button>
             </p>
           )}
           {!items.length && !editable && !error && (
@@ -230,7 +232,7 @@ export default function EvidencePanel({
         <div className="evidence-error" role="alert">
           {error}
           {!pending && (
-            <button
+            <Button
               type="button"
               className="secondary"
               disabled={busy}
@@ -250,17 +252,17 @@ export default function EvidencePanel({
               }}
             >
               โหลดรายการภาพใหม่
-            </button>
+            </Button>
           )}
           {pending && (
-            <button
+            <Button
               type="button"
               className="secondary"
               disabled={busy}
               onClick={() => void upload(pending)}
             >
               ลองบันทึกภาพเดิมอีกครั้ง
-            </button>
+            </Button>
           )}
         </div>
       )}

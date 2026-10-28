@@ -1,3 +1,5 @@
+import Field from "./ui/Field";
+import Button from "./ui/Button";
 import ValidatedForm from "./ui/ValidatedForm";
 import {
   lazy,
@@ -190,7 +192,7 @@ function Workspace() {
       <>
         <div className="mode-strip">
           <span>กำลังทดลองข้อมูลตัวอย่าง</span>
-          <button onClick={() => setDemo(false)}>กลับระบบจริง</button>
+          <Button onClick={() => setDemo(false)}>กลับระบบจริง</Button>
         </div>
         <App />
       </>
@@ -207,7 +209,7 @@ function Workspace() {
       <div className="workspace-loading">
         {!error && <Skeleton />}
         {error && <p role="alert">{error}</p>}
-        <button
+        <Button
           className="primary"
           disabled={refreshing}
           onClick={() => {
@@ -215,10 +217,10 @@ function Workspace() {
           }}
         >
           ลองโหลดใหม่
-        </button>
-        <button className="secondary" onClick={() => void logout()}>
+        </Button>
+        <Button className="secondary" onClick={() => void logout()}>
           ออกจากระบบ
-        </button>
+        </Button>
       </div>
     );
   if (!snapshot.profile?.active)
@@ -230,15 +232,15 @@ function Workspace() {
           เข้าสู่ระบบด้วย {session.user.email} แล้ว กรุณาให้ผู้ดูแลระบบ
           เปิดใช้งานบัญชี
         </p>
-        <button
+        <Button
           className="primary"
           onClick={() => void refresh().catch(() => {})}
         >
           ตรวจสอบสิทธิ์อีกครั้ง
-        </button>
-        <button className="secondary" onClick={() => void logout()}>
+        </Button>
+        <Button className="secondary" onClick={() => void logout()}>
           ออกจากระบบ
-        </button>
+        </Button>
       </div>
     );
   if (snapshot.profile.role !== "messenger")
@@ -281,9 +283,9 @@ function Workspace() {
       {error && (
         <div className="connection-error" role="alert">
           {error}
-          <button onClick={() => void refresh().catch(() => {})}>
+          <Button onClick={() => void refresh().catch(() => {})}>
             โหลดใหม่
-          </button>
+          </Button>
         </div>
       )}
       <div className="mode-strip">
@@ -306,12 +308,12 @@ function Workspace() {
             />
           )}
         </span>
-        <button
+        <Button
           disabled={saving || refreshing}
           onClick={() => void refresh().catch(() => {})}
         >
           โหลดใหม่
-        </button>
+        </Button>
       </div>
       <App
         remote={{
@@ -374,7 +376,7 @@ function Auth({ onDemo }: { onDemo: () => void }) {
           }
         }}
       >
-        <label className="field">
+        <Field>
           อีเมล <Required />
           <input
             required
@@ -383,8 +385,8 @@ function Auth({ onDemo }: { onDemo: () => void }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
-        </label>
-        <label className="field">
+        </Field>
+        <Field>
           รหัสผ่าน <Required />
           <input
             required
@@ -394,14 +396,14 @@ function Auth({ onDemo }: { onDemo: () => void }) {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </label>
+        </Field>
         {message && (
           <p className="auth-message" role="status">
             {message}
           </p>
         )}
         {!supabase && <p role="alert">ยังไม่ได้กำหนด การเชื่อมต่อระบบ</p>}
-        <button className="primary" disabled={busy || !supabase}>
+        <Button className="primary" disabled={busy || !supabase}>
           {busy ? (
             <Loading label="กำลังดำเนินการ…" />
           ) : signup ? (
@@ -409,9 +411,9 @@ function Auth({ onDemo }: { onDemo: () => void }) {
           ) : (
             "เข้าสู่ระบบ"
           )}
-        </button>
+        </Button>
       </ValidatedForm>
-      <button
+      <Button
         className="secondary"
         disabled={busy}
         onClick={() => {
@@ -421,10 +423,10 @@ function Auth({ onDemo }: { onDemo: () => void }) {
         }}
       >
         {signup ? "มีบัญชีแล้ว · เข้าสู่ระบบ" : "สร้างบัญชีใหม่"}
-      </button>
-      <button className="back" onClick={onDemo}>
+      </Button>
+      <Button className="back" onClick={onDemo}>
         ดูต้นแบบด้วยข้อมูลตัวอย่าง
-      </button>
+      </Button>
     </div>
   );
 }
@@ -470,7 +472,7 @@ export function ProfileEditor({
           <span className="code">
             {profile.email || profile.id.slice(0, 8)}
           </span>
-          <label className="field">
+          <Field>
             ชื่อ <Required />
             <input
               required
@@ -478,8 +480,8 @@ export function ProfileEditor({
               value={p.display_name}
               onChange={(e) => setP({ ...p, display_name: e.target.value })}
             />
-          </label>
-          <label className="field">
+          </Field>
+          <Field>
             บทบาท <Required />
             <select
               required
@@ -492,7 +494,7 @@ export function ProfileEditor({
               <option value="super_user">ผู้จัดการงาน</option>
               <option value="admin">ผู้ดูแลระบบ</option>
             </select>
-          </label>
+          </Field>
           <label className="active-check">
             <input
               type="checkbox"
@@ -503,9 +505,9 @@ export function ProfileEditor({
             />
             เปิดใช้งาน
           </label>
-          <button className="secondary">
+          <Button className="secondary">
             {saving ? <Loading label="กำลังบันทึก…" /> : "บันทึก"}
-          </button>
+          </Button>
         </fieldset>
         {failure && !confirm && <Alert tone="danger">{failure}</Alert>}
       </ValidatedForm>
@@ -532,14 +534,14 @@ export function ProfileEditor({
           </dl>
           {failure && <Alert tone="danger">{failure}</Alert>}
           <div className="dialog-actions">
-            <button
+            <Button
               className="secondary"
               disabled={saving}
               onClick={() => setConfirm(false)}
             >
               ยกเลิก
-            </button>
-            <button
+            </Button>
+            <Button
               className="primary"
               disabled={saving}
               onClick={() => void save()}
@@ -549,7 +551,7 @@ export function ProfileEditor({
               ) : (
                 "ยืนยันการเปลี่ยนสิทธิ์"
               )}
-            </button>
+            </Button>
           </div>
         </Dialog>
       )}
